@@ -48,9 +48,9 @@ $ git clone https://github.com/parklab/MSIprofiler.git
 MSIprofiler discards soft-clipped bases.
   To generate the reference set of MS repeats, first download the fasta sequences for the chromosomes by running the file:
 
-	  ```sh
-	  $ ./download_chromosomes_fa.sh
-	  ```
+```sh
+$ ./download_chromosomes_fa.sh
+```
 
 - Once the fasta sequences are downloaded, run in the root of the directory of MSIprofiler the following script: 
 
@@ -98,7 +98,7 @@ optional arguments:
                         Input reference set of microsatellites
   --output_prefix OUTPUT_PREFIX
                         Prefix for the output files
-  --mode MODE           Both, phased, unphased
+  --mode MODE           The value of this parameter sets whether MSIprofiler will detect MSI focusing only on microsatellites phased with germline SNPs (phased), all microsatellites contained in the reference sets that can be detected in the input bam files (unphased), or both (both).
   --genomic_region GENOMIC_REGION
                         Analyse the exome or the whole genome. Accepted
                         values: exome or genome
@@ -121,22 +121,16 @@ optional arguments:
                         Maximum number of tolerated mismatches in the flanking
                         regions. Default is 0
 ```
-- mode
-- genomic_region
-
-Parallel 
-
-
 
 ## Haplotype-specific detection of MSI
 
-MSIprofiler can detect haplotype-specific msi by phasing microsatellites and heterozygous SNPs detected in the germline.
+MSIprofiler can detect haplotype-specific MSI by phasing microsatellites and heterozygous SNPs detected in the germline.
 
-bed file in 0-based coordinates
+The input bed files need to be in 0-based coordinates.
 
 The steps followed by MSIprofiler for the detection of haplotype-specific MSI are:
 
-- Detect whether the reads covering each germline heterozygous SNP also contain MS repeats that are present in the reference set. 
+- Detect whether the reads covering each input germline heterozygous SNP also contain MS repeats that are present in the reference set. 
 This step is applied to both the normal and tumor/case samples using the input bam files.
 - Compare the distribution of MS lengths (i.e. read length distributions) in the normal and tumor/case samples using the KS test
 
