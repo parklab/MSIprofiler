@@ -74,7 +74,7 @@ Once the reference sets are ready, MSIprofiler can be used.
 Information on the parameters can be accessed by typing:
 ```sh
 $ python MSIprofiler.py --help
-```
+
 usage: MSIprofiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed BED
                   --fasta FASTA --reference_set REFERENCE_SET --output_prefix
                   OUTPUT_PREFIX --mode MODE --genomic_region GENOMIC_REGION
@@ -120,6 +120,7 @@ optional arguments:
   --tolerated_mismatches TOLERATED_MISMATCHES
                         Maximum number of tolerated mismatches in the flanking
                         regions. Default is 0
+```
 - mode
 - genomic_region
 
