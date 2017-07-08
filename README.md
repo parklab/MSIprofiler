@@ -75,7 +75,51 @@ Information on the parameters can be accessed by typing:
 ```sh
 $ python MSIprofiler.py --help
 ```
+usage: MSIprofiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed BED
+                  --fasta FASTA --reference_set REFERENCE_SET --output_prefix
+                  OUTPUT_PREFIX --mode MODE --genomic_region GENOMIC_REGION
+                  --nprocs NPROCS [-ru RUS] [--min_MS_length MIN_MS_LENGTH]
+                  [--max_MS_length MAX_MS_LENGTH]
+                  [--mapping_quality MAPPING_QUALITY]
+                  [--flank_size FLANK_SIZE] [--min_coverage MIN_COVERAGE]
+                  [--tolerated_mismatches TOLERATED_MISMATCHES]
 
+usage: samtools_view.py --bam reads.bam --bed bed_file.bed
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --tumor_bam TUMOR_BAM
+                        Tumor bam file name
+  --normal_bam NORMAL_BAM
+                        Normal bam file name
+  --bed BED             Input bedfile name
+  --fasta FASTA         Input fasta reference file name
+  --reference_set REFERENCE_SET
+                        Input reference set of microsatellites
+  --output_prefix OUTPUT_PREFIX
+                        Prefix for the output files
+  --mode MODE           Both, phased, unphased
+  --genomic_region GENOMIC_REGION
+                        Analyse the exome or the whole genome. Accepted
+                        values: exome or genome
+  --nprocs NPROCS       Number of processes
+  -ru RUS               MS repeats units to be considered
+  --min_MS_length MIN_MS_LENGTH
+                        Minimum length of microsatellites to be considered.
+                        Minimum available is 6; default is 10.
+  --max_MS_length MAX_MS_LENGTH
+                        Maximum length of microsatellites to be considered.
+                        Maximum available is 60; default is 60.
+  --mapping_quality MAPPING_QUALITY
+                        Minimum mapping quality. Default is 40.
+  --flank_size FLANK_SIZE
+                        Minimum length of the flanking regions. Default is 10
+  --min_coverage MIN_COVERAGE
+                        Minimum coverage at each MS locus -both in the case
+                        and control bams-. Default is 10
+  --tolerated_mismatches TOLERATED_MISMATCHES
+                        Maximum number of tolerated mismatches in the flanking
+                        regions. Default is 0
 - mode
 - genomic_region
 
