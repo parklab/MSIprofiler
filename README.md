@@ -53,10 +53,10 @@ $ ./download_chromosomes_fa.sh
 ```
 
 - Once the fasta sequences are downloaded, run in the root of the directory of MSIprofiler the following script: 
+```sh
+$ python get_reference_set_from_fasta.py
+```
 
-	  ```sh
-	  $ python get_reference_set_from_fasta.py
-	  ```
 This will generate one file per chromosome containing the refined reference sets of MS repeats.
 
 Make sure to add the current directory to your PYTHONPATH:
@@ -92,17 +92,14 @@ optional arguments:
                         Tumor bam file name
   --normal_bam NORMAL_BAM
                         Normal bam file name
-  --bed BED             Input bedfile name
+  --bed BED             Input bedfile name containing heterozygous SNPs. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
   --fasta FASTA         Input fasta reference file name
   --reference_set REFERENCE_SET
                         Input reference set of microsatellites
   --output_prefix OUTPUT_PREFIX
                         Prefix for the output files
   --mode MODE           The value of this parameter sets whether MSIprofiler will detect MSI focusing only on microsatellites phased with germline SNPs (phased), all microsatellites contained in the reference sets that can be detected in the input bam files (unphased), or both (both).
-  --genomic_region GENOMIC_REGION
-                        Analyse the exome or the whole genome. Accepted
-                        values: exome or genome
-  --nprocs NPROCS       Number of processes
+  --nprocs NPROCS       Number of processes to be launched
   -ru RUS               MS repeats units to be considered
   --min_MS_length MIN_MS_LENGTH
                         Minimum length of microsatellites to be considered.
@@ -125,14 +122,10 @@ optional arguments:
 ## Haplotype-specific detection of MSI
 
 MSIprofiler can detect haplotype-specific MSI by phasing microsatellites and heterozygous SNPs detected in the germline.
-
-The input bed files need to be in 0-based coordinates.
-
 The steps followed by MSIprofiler for the detection of haplotype-specific MSI are:
 
-- Detect whether the reads covering each input germline heterozygous SNP also contain MS repeats that are present in the reference set. 
-This step is applied to both the normal and tumor/case samples using the input bam files.
-- Compare the distribution of MS lengths (i.e. read length distributions) in the normal and tumor/case samples using the KS test
+- Detect whether the reads covering each allele of the input germline heterozygous SNP also contain MS repeats that are present in the reference set. This step is applied across all input SNPs to both the normal and tumor/case samples using the input bam files.
+- Compare the distribution of MS lengths (i.e. read length distributions) in the normal and tumor/case samples using the Kolmogorov-Smirnov test.
 
 To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'both' or 'phased'.
 
