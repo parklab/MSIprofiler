@@ -52,9 +52,10 @@ MSIprofiler discards soft-clipped bases.
 $ ./download_chromosomes_fa.sh
 ```
 
-- Once the fasta sequences are downloaded, run in the root of the directory of MSIprofiler the following script: 
+- Once the fasta sequences are downloaded, run in the root of the directory of MSIprofiler the following two scripts: 
 ```sh
 $ python get_reference_set_from_fasta.py
+$ ./sort_reference_sets.sh
 ```
 
 This will generate one file per chromosome containing the refined reference sets of MS repeats.
