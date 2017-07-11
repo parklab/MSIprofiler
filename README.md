@@ -92,7 +92,7 @@ optional arguments:
                         Tumor or case (e.g. single cell) bam file name
   --normal_bam NORMAL_BAM
                         Normal or control bam file name
-  --bed BED             Input bed file containing heterozygous SNPs. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
+  --bed BED             Input bed file containing heterozygous SNPs without header. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
   --fasta FASTA         Input fasta reference file name
   --reference_set REFERENCE_SET
                         Input reference set of microsatellites
@@ -119,6 +119,11 @@ optional arguments:
                         regions. Default is 0
 ```
 
+Example of usage:
+```sh
+python path_to_MSIprofiler/MSIprofiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs.bed  --fasta path_to_MSIprofiler/chrs_fa/chr7.fa  --output_prefix example  --mode unphased --nprocs 8  --reference_set path_to_MSIprofiler/MSIprofiler/reference_set_7_sorted.txt --min_coverage 8 --min_MS_length 6 --flank_size 10 -ru 1 -ru 2 -ru 3 -ru 4 -ru 5  --tolerated_mismatches 0
+```
+
 ## Haplotype-specific detection of MSI
 
 MSIprofiler can detect haplotype-specific MSI by phasing microsatellites and heterozygous SNPs detected in the germline (i.e. normal/control sample).
@@ -128,6 +133,10 @@ The steps followed by MSIprofiler for the detection of haplotype-specific MSI ar
 - Compare the distribution of MS lengths (i.e. read length distributions) in the normal and tumor/case samples using the Kolmogorov-Smirnov test.
 
 To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'both' or 'phased'.
+
+The bed files containing the heterozygous SNPs in 0-based coordinates need to have the following columns: chr, start, end, ref and alt.
+For instance, an entry would look like:
+7	20607	20608	A	G
 
 
 ## Detection of MSI (unphased) by comparing read-length distributions across both alleles
@@ -168,7 +177,8 @@ Overall, we recommend using phased calls whenever possible.
 
 # A comment on the number of mismatches in the flanking regions and the length of these
 
-Based on our experience, we recommend to consider flanking regions of at least 10 bases and allow for no mismatches in these. 
+Based on our experience, we recommend to consider flanking regions of at least 10 bases and allow for no mismatches in these to get conservative calls. We recommend to inspect candidate mutations manually when using more lenient parameters.
+
 The following example illustrates why allowing mismatches in the flanks can lead to false positive calls (and also illustrates why refining the reference sets is necessary). 
 
 Consider the microsatellite repeat:
