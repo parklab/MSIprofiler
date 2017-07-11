@@ -245,5 +245,10 @@ The details of MSIprofiler have been published in:
 XXX
 -->
 
+# Contact
+If you have any questions or suggestions please contact us: 
+Isidro Cortes Ciriano: isidrolauscher at gmail.com  or isidro\_cortesciriano@hms.harvard.edu
+Peter J Park: peter\_park@hms.harvard.edu
+
 
 

@@ -1,3 +1,7 @@
+# Isidro Cortes-Ciriano
+# Harvard Medical School
+# isidrolauscher@gmail.com
+
 # to make numpy divisions show decimal values by default:
 # https://stackoverflow.com/questions/1799527/numpy-show-decimal-values-in-array-results
 from __future__ import division
