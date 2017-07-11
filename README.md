@@ -138,6 +138,16 @@ The bed files containing the heterozygous SNPs in 0-based coordinates need to ha
 For instance, an entry would look like:
 7	20607	20608	A	G
 
+- Example of output
+10	52539934	C	52539942	10,10,10,10	10,10,10,10,10,10,10,10,10,10,10	1.0
+The columns correspond to:
+1. chromosome
+2. start of the MS repeat (0-based)
+3. SNP allele
+4. SNP start (0-based)
+5. length of the MS repeat in the normal/control sample
+6. length of the MS repeat in the tumor/case sample
+7. Kolmogorov-Smirnov P value
 
 ## Detection of MSI (unphased) by comparing read-length distributions across both alleles
 
@@ -147,8 +157,25 @@ To this aim, the length of a given repeat present in the reference set is measur
 
 To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'both' or 'unphased'.
 
+The bed files containing the heterozygous SNPs in 0-based coordinates need to have the following columns: chr, start, end, ref and alt.
+For instance, an entry would look like:
+7	20607	20608	A	G
 
-*Confidence of the calls
+- Example of output
+1	143256761	143256771	AACAACAACAA	3	11	11,11,11,11,11,11,11,11	11,11,11,11,11,11,11,11,11	1.0	high
+The columns correspond to:
+1. chromosome
+2. start of the MS repeat (0-based)
+3. end of the MS repeat (0-based)
+4. MS repeat
+5. repeat motif length
+6. length of the repeat in the reference genome
+7. length of the MS repeat in the normal/control sample
+8. length of the MS repeat in the tumor/case sample
+9. Kolmogorov-Smirnov P value
+10. confidence (see below)
+
+*Confidence of the unphased calls
 
 The assumptions of this methodology are that:
 - both alleles are at the same copy number (usually 1:1)
