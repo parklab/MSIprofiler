@@ -71,7 +71,7 @@ Note: the coordinates of the reference MS sets are 1-based.
 ### Detection of microsatellites
 
 
-![alt msidetection](https://github.com/parklab/MSIprofiler/edit/master/examples_detection_MS_2.svg)
+![alt text](https://github.com/parklab/MSIprofiler/edit/master/examples_detection_MS_2.svg "msidetect")
 
 
 ## MSIprofiler parameters
