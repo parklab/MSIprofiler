@@ -3,9 +3,9 @@
 MSIprofiler is a tool to detect microsatellite instability (MSI) from sequencing data.
 Its functionalities include:
 
-  - Detection of microsatellites (MS) in the reference genome
-  - Haplotype-specific MSI detection using heterozygous SNPs for phasing the microsatellites
-  - Detection of MSI accross the entire genome (not phased)
+  - Detection of microsatellites (MS) in the reference genome.
+  - Haplotype-specific MSI detection. In this case heterozygous SNPs are used for phasing the microsatellites.
+  - Detection of MSI accross the entire genome (not phased).
 
 The underlying principles of MSIprofiler and the details about its validation
 using experimental data from TCGA can be found in the following two publications:
@@ -18,7 +18,7 @@ and
 **A molecular portrait of microsatellite instability across multiple cancers**
 Isidro Cortes-Ciriano et al. Nat. Commun. 2017 (https://www.nature.com/articles/ncomms15180)
 
-MSIprofiler is free for academic use only. 
+MSIprofiler is free for academic use **only**. 
 For non-academic use, please email Dr. Tatiana Demidova-Rice at Harvard University Office of Technology Development (tatiana\_demidova-rice@harvard.edu)
 
 # Requirements
@@ -44,9 +44,10 @@ $ git clone https://github.com/parklab/MSIprofiler.git
 ```
 
 ## Detection of microsatellites in the human genome
-  - MSIprofiler uses a refined reference set of microsatellites derived from the human genome. Given that mapping reads to highly repetitive regions is challenging and the presence of concatenated microsatellites can hamper a correct detection of microsatellite lengths, MSIprofiler only considers a refined set of MS repeats whose flanking regions do not contain MS repeats. This permits to correctly align the flaking regions. 
-MSIprofiler discards soft-clipped bases.
-  To generate the reference set of MS repeats, first download the fasta sequences for the chromosomes by running the file:
+  - MSIprofiler uses a high-confidence reference set of microsatellites derived from the human genome.
+ Mapping reads to highly repetitive regions is challenging and the presence of concatenated microsatellites can hamper a correct detection of microsatellite lengths. Therefore, MSIprofiler only considers MS repeats whose flanking regions do not contain MS repeats of more than 5 bases (e.g. AAAAAA). This permits to correctly align the flaking regions and reduce the false positive rate.
+In addition, MSIprofiler discards soft-clipped bases.
+To generate the reference set of MS repeats, first download the fasta sequences for the chromosomes by running the file:
 
 ```sh
 $ ./download_chromosomes_fa.sh
@@ -58,14 +59,12 @@ $ python get_reference_set_from_fasta.py
 $ ./sort_reference_sets.sh
 ```
 
-This will generate one file per chromosome containing the refined reference sets of MS repeats.
+This will generate one file per chromosome containing the reference sets of MS repeats.
 
 Make sure to add the current directory to your PYTHONPATH:
 export PYTHONPATH=$PYTHONPATH:$PWD
 
-Note: the reference set coordinated are 1-based.
-
-The refinement consists of discarding MS repeats whose flanking regions also comprise MS repeats of at most 5 bases.  
+Note: the coordinates of the reference MS sets are 1-based.
 
 
 ## MSIprofiler parameters
@@ -85,14 +84,12 @@ usage: MSIprofiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed B
                   [--flank_size FLANK_SIZE] [--min_coverage MIN_COVERAGE]
                   [--tolerated_mismatches TOLERATED_MISMATCHES]
 
-usage: samtools_view.py --bam reads.bam --bed bed_file.bed
-
 optional arguments:
   -h, --help            show this help message and exit
   --tumor_bam TUMOR_BAM
-                        Tumor bam file name
+                        Tumor or case bam file name
   --normal_bam NORMAL_BAM
-                        Normal bam file name
+                        Normal or control bam file name
   --bed BED             Input bedfile name containing heterozygous SNPs. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
   --fasta FASTA         Input fasta reference file name
   --reference_set REFERENCE_SET
@@ -132,46 +129,35 @@ To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'bo
 
 
 ## Detection of MSI (unphased) by comparing read-length distributions across both alleles
-- msi directly from the sequencing data without considering phasing information in a similar manner as
-the experimental assays (e.g. capillary sequencing-based fragment length assay). 
-To this aim, the length of the repeats is measured from the reads in both the normal and tumor/case samples.
-Next, the Kolmogorov-Smirnov test is used to test for a significant difference in the distributions.
 
+MSIprofiler detecs MSI directly from the sequencing data without considering phasing information in a similar manner as
+the experimental assays (e.g. capillary sequencing-based fragment length assay). 
+To this aim, the length a given repeat present in the reference set is measured using the reads from both the normal and tumor/case samples. Next, the Kolmogorov-Smirnov test is used to test for a significant difference in the distributions. These steps are applied to across all MS repeats in the reference set covered by the sequencing data.
 
 *  Confidence of the calls
 
-The assumption of this methodology are that:
+The assumptions of this methodology are that:
 - both alleles are at the same copy number (usually 1:1)
-- both alleles are represented evenly; i.e. both alleles are amplified and sequences evenly.
+- both alleles are represented evenly in the sequencing data; i.e. there is no allelec bias during the library preparation or sequencing steps.
 
-These assumptions are however not met in tumor samples due to aneuploidy (e.g., focal amplifications or deletions, whole-chromosome gains/losses, etc..).
-Moreover, intratumor heterogeneity represents a potential confounding factor if an MS repeat is altered in only a subset of populations of cancer cells (i.e. subclonal mutation).
+These assumptions are however not always met in tumor samples due to aneuploidy (e.g., focal amplifications or deletions, whole-chromosome gains/losses, etc..). Moreover, intratumor heterogeneity represents a potential confounding factor if an MS repeat is altered in only a subset of the cancer cells (i.e. subclonal mutation). We note that intratumor heterogeneity, as well as tumor purity, are the main reasons why it is hard to define a statistical model to genotype microsatellites in tumor sample in a similar way as it is done for normal cases.
 
-In the case of single-cell sequencing data where the polymerase phi29 was used for amplification (e.g. multiple displacement amplification or MDA), 
-large regions of the genome are not amplified evenly (allelic imbalance). 
+In the case of single-cell sequencing data where the polymerase phi29 is generally used for amplification (e.g. multiple displacement amplification or MDA), large regions of the genome are not amplified evenly (allelic imbalance or even allelic dropout). 
 
-The imbalance between alleles represents a source of false positives for heterozygous microsatellites. 
-To account for this, we assign a confidence level for each of the unphased calles based on whether the 
+These issues are relevant for MSI detection, as the imbalance between alleles represents a source of false positives for heterozygous microsatellites. To account for this, we assign a confidence level for each of the unphased calles based on whether the 
 microsatellite repeat under consideration is homozygous or heterozygous in the germline. 
 
-If a MS repeat is homozygous in the germline and is mutated in any of the copies present in the tumor/case sample,
-the mutation will be detected using the pipeline presented above even if some copies are lost. 
-This is due to the fact that the loss of one or multiple copies does not affect the read length distribution, 
-as this is unimodal (Fig XX).
+If an MS repeat is homozygous in the germline and is mutated in any of the copies present in the tumor/case sample,
+the mutation can be detected using the pipeline presented above. 
+This is due to the fact that the read length distribution for a homozygous microsatellite is unimodal.
 
-By contrast, in the case of heterozygous SNPs, the distribution of read lengths is altered if one of the alleles is lost (e.g. one-chromosome loss or focal deletion).
-In such a case, a significant difference between the read length distributions of the germline and tumor/case
-samples would represent a false positive (Fig XXX). 
+By contrast, in the case of heterozygous MS repeats the read length distribution is bimodal, with each mode corresponding
+to one alelle. If one of the alleles is lost (e.g. one-chromosome loss or focal deletion), the read length distributions between the normal and tumor samples would differ significantly, hence leading to a false positive. This situation can also happen if one copy has been amplified hundreds of times (e.g. in a double minute chromosome). In such a case, the high imbalance in copy number between the two alleles would be refleceted in the seqeuncing data, as the faction of reads comming from the unamplified allele would be underrepresented. Hence, the read length distribution would differ significantly in this case even if there is no real mutation.
 
-We thus assign high-confidence to the calls made on MS repeats that are homozygous in the germline,
+Ideally, only MSI calls calculated for MS repeats located in regions at copy number of 2 without loss of heterozygosity should be considered. Given that copy number information is not always available,
+we assign high-confidence to the calls made on MS repeats that are homozygous in the germline,
 and low confidence to those calls made on heterozygous MS repeats.
-To determine whether an MS repeat is homo- or heterozygous in a given normal sample (i.e. in the germline)
-we test whether...XXX
-
-
-
-copy number alterations in cancer (relationship to confidence)
-imposibilidad de statistical model due to heterogeneity (tal vez se puede controlar purity)
+We consider that an MS repeat is homozygous in the normal if at least 70% of the reads support the same MS length. 
 
 
 # Best practices for single-cell sequencing data
@@ -201,13 +187,14 @@ Given that we allowed one mismatch in the flanking region
 
 
 # Notes
-Currently, MSIprofiler only considers the hg19 assembly of the human genome.
-However, can be used with other assemblies if the bam files and the reference set are concordant.
+Currently, MSIprofiler considers by default the hg19 assembly of the human genome.
+However, MSIprofiler can be used with other assemblies if the bam files and the fasta sequences from which the reference sets are derived are concordant.
 
+<!--
 # How to cite
 The details of MSIprofiler have been published in:
 XXX
-
+-->
 
 
 
