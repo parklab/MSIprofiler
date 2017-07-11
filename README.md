@@ -68,6 +68,10 @@ export PYTHONPATH=$PYTHONPATH:$PWD
 
 Note: the coordinates of the reference MS sets are 1-based.
 
+### Detection of microsatellites
+
+<img src="examples_detection_MS_2.pdf" alt="some text"  width="4200" height="4200">
+
 
 ## MSIprofiler parameters
 
@@ -204,7 +208,7 @@ Overall, we recommend using phased calls whenever possible.
 
 # A comment on the number of mismatches in the flanking regions and the length of these
 
-Based on our experience, we recommend to consider flanking regions of at least 10 bases and allow for no mismatches in these to get conservative calls. We recommend to inspect candidate mutations manually when using more lenient parameters.
+Based on our experience, we recommend to consider flanking regions of at least 10 bases and allow for no mismatches in these to get conservative calls. We recommend to inspect candidate mutations manually when using more lenient parameter values.
 
 The following example illustrates why allowing mismatches in the flanks can lead to false positive calls (and also illustrates why refining the reference sets is necessary). 
 
