@@ -70,8 +70,7 @@ Note: the coordinates of the reference MS sets are 1-based.
 
 ### Detection of microsatellites
 
-<img src="examples_detection_MS_2.pdf" alt="some text"  width="4200" height="4200">
-
+![alt text](examples_detection_MS_2.pdf)
 
 ## MSIprofiler parameters
 
