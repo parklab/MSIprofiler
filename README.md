@@ -180,7 +180,7 @@ chr9	89149744	89149756	AAAAAAAAAAAAA intergenic; length: 13
 The reads found in one of the alleles of a given patient looked like (base qualities and additional information have been removed for the sake of clarity) :
 
 HSQ700642:192:C13FVACXX:2:2214:4777:60283   99  9   89149699    60  100M    =   89149723    124                                  
-ATTGCACAATACATGACCTAATGGAAATGTGAGAATA *TTTTAGTG*  *AAAAAAAAAAAAA* *TAAAAAGA* AGCAGCAAAGATCCAACCAAATGAGATCCATATG
+ATTGCACAATACATGACCTAATGGAAATGTGAGAATA <span style="color:blue">some *TTTTAGTG* text</span>  *AAAAAAAAAAAAA* *TAAAAAGA* AGCAGCAAAGATCCAACCAAATGAGATCCATATG
 The length of this repeat supported by the data is: 13
 
 whereas those phased with the other allele looked like:
