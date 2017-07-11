@@ -176,20 +176,20 @@ chr9	89149744	89149756	AAAAAAAAAAAAA intergenic; length: 13
 
 The reads found in one of the alleles of a given patient looked like (base qualities and additional information have been removed for the sake of clarity) :
 
-HSQ700642:192:C13FVACXX:2:2214:4777:60283   99  9   89149699    60  100M    =   89149723    124                                  
+<!-- HSQ700642:192:C13FVACXX:2:2214:4777:60283   99  9   89149699    60  100M    =   89149723    124  -->                               
 ATTGCACAATACATGACCTAATGGAAATGTGAGAATA **TTTTAGTG** *AAAAAAAAAAAAA* **TAAAAAGA** AGCAGCAAAGATCCAACCAAATGAGATCCATATG
 The length of this repeat supported by the data is: 13
 
 whereas those phased with the other allele looked like:
-SQ700642:208:D1D6WACXX:2:1116:11062:89332  83  9   89149707    60  100M    =   89149522    -285                   
+<!-- SQ700642:208:D1D6WACXX:2:1116:11062:89332  83  9   89149707    60  100M    =   89149522    -285   -->                
 ATACATGACCTAATGGAAATGTGAGAATA **TTTTAGTG**  *AAAAAAA* **TAAAAATA** AAAAGAAGCAGCAAAGATCCAACCAAATGAGATCCATATGGGATGGGT   
 The length of this repeat supported by the data is: 7
 
 due to a SNP in the middle of the read.
 If we allowed for one mismatch in the flanking region, the length of this microsatellite in this patient would be 7 and 13. 
 The right-hand flanking region is **TAAAAAGA**. 
-One of the SNP alleles (i.e. T) interrupts the polyA motif. The 8 bases on the right, only differ in one base with the reference flank region: 
-- reference: TAAAAA**G**A _vs_ TAAAAA**T**A
+One of the SNP alleles (i.e. T) interrupts the polyA motif. The 8 bases on the right, only differ in one base with the reference flank region:  reference: TAAAAA**G**A _vs_ TAAAAA**T**A.
+
 Thus, allowing for a mismatch can lead to an incorrect estimation of the true length of the microsatellite.
 
 
