@@ -138,7 +138,7 @@ The bed files containing the heterozygous SNPs in 0-based coordinates need to ha
 For instance, an entry would look like:
 7	20607	20608	A	G
 
-- Example of output
+### Example of output
 10	52539934	C	52539942	10,10,10,10	10,10,10,10,10,10,10,10,10,10,10	1.0
 The columns correspond to:
 1. chromosome
@@ -161,7 +161,7 @@ The bed files containing the heterozygous SNPs in 0-based coordinates need to ha
 For instance, an entry would look like:
 7	20607	20608	A	G
 
-- Example of output
+### Example of output
 1	143256761	143256771	AACAACAACAA	3	11	11,11,11,11,11,11,11,11	11,11,11,11,11,11,11,11,11	1.0	high
 The columns correspond to:
 1. chromosome
@@ -175,7 +175,7 @@ The columns correspond to:
 9. Kolmogorov-Smirnov P value
 10. confidence (see below)
 
-*Confidence of the unphased calls
+### Confidence of the unphased calls
 
 The assumptions of this methodology are that:
 - both alleles are at the same copy number (usually 1:1)
