@@ -189,7 +189,7 @@ The reads found in one of the alleles of a given patient look like (base qualiti
 <!-- HSQ700642:192:C13FVACXX:2:2214:4777:60283   99  9   89149699    60  100M    =   89149723    124  -->                               
 ATTGCACAATACATGACCTAATGGAAATGTGAGAATA **TTTTAGTG** *AAAAAAAAAAAAA* **TAAAAAGA** AGCAGCAAAGATCCAACCAAATGAGATCCATATG
 
-The length of this repeat supported by the data is 13. The right-hand flanking region (i.e. 8 upstream bases in this example) is **TAAAAAGA**.
+The length of this repeat supported by the data is 13. The right-hand flanking region (i.e. 8 downstream bases in this example) is **TAAAAAGA**.
 
 The reads supporting the other allele look like:
 <!-- SQ700642:208:D1D6WACXX:2:1116:11062:89332  83  9   89149707    60  100M    =   89149522    -285   -->                
