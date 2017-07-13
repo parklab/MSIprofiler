@@ -96,8 +96,8 @@ optional arguments:
                         Tumor or case (e.g. single cell) bam file name
   --normal_bam NORMAL_BAM
                         Normal or control bam file name
-  --bed BED             Input bed file containing heterozygous SNPs without header. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
-  --fasta FASTA         Input fasta reference file name
+  --bed BED             Input bed file containing heterozygous SNPs without header detected in a given chromosome. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
+  --fasta FASTA         Input fasta reference file name for the chromosome under study
   --reference_set REFERENCE_SET
                         Input reference set of microsatellites
   --output_prefix OUTPUT_PREFIX
@@ -125,7 +125,7 @@ optional arguments:
 
 Example of usage:
 ```sh
-python path_to_MSIprofiler/MSIprofiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs.bed  --fasta path_to_MSIprofiler/chrs_fa/chr7.fa  --output_prefix example  --mode unphased --nprocs 8  --reference_set path_to_MSIprofiler/MSIprofiler/reference_set_7_sorted.txt --min_coverage 8 --min_MS_length 6 --flank_size 10 -ru 1 -ru 2 -ru 3 -ru 4 -ru 5  --tolerated_mismatches 0
+python path_to_MSIprofiler/MSIprofiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs_chr7.bed  --fasta path_to_MSIprofiler/chrs_fa/chr7.fa  --output_prefix example_chr7  --mode unphased --nprocs 8  --reference_set path_to_MSIprofiler/MSIprofiler/reference_set_7_sorted.txt --min_coverage 8 --min_MS_length 6 --flank_size 10 -ru 1 -ru 2 -ru 3 -ru 4 -ru 5  --tolerated_mismatches 0
 ```
 
 ## Haplotype-specific detection of MSI
