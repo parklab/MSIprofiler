@@ -83,7 +83,7 @@ $ python MSIprofiler.py --help
 
 usage: MSIprofiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed BED
                   --fasta FASTA --reference_set REFERENCE_SET --output_prefix
-                  OUTPUT_PREFIX --mode MODE --genomic_region GENOMIC_REGION
+                  OUTPUT_PREFIX --mode MODE 
                   --nprocs NPROCS [-ru RUS] [--min_MS_length MIN_MS_LENGTH]
                   [--max_MS_length MAX_MS_LENGTH]
                   [--mapping_quality MAPPING_QUALITY]
@@ -103,7 +103,7 @@ optional arguments:
   --output_prefix OUTPUT_PREFIX
                         Prefix for the output files
   --mode MODE           The value of this parameter sets whether MSIprofiler will detect MSI focusing only on microsatellites phased with germline SNPs (phased), all microsatellites contained in the reference sets that can be detected in the input bam files (unphased), or both (both).
-  --nprocs NPROCS       Number of processes to be launched
+  --nprocs NPROCS       Number of processes to be launched. If equal to 1, the serial implementation is used. If higher than 1, as many  processes as the value of this argument will be launched.
   -ru RUS               MS repeat units to be considered (e.g. mono, di, tri, tetra, ..). Specify these as integers (e.g. 1, 2, 3, 4, ..).
   --min_MS_length MIN_MS_LENGTH
                         Minimum length of microsatellites to be considered.
