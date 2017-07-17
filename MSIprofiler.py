@@ -69,7 +69,7 @@ def find_repeats(seq,flank_size):
                 if score > max_observed_score:
                     max_observed_score = score
                 #debugging
-				#print "RU current_pos  pos_in_motif  test_pos   bases, score"
+            #print "RU current_pos  pos_in_motif  test_pos   bases, score"
                 #print ru, current_pos, pos_in_motif, test_pos, bases,score,"\n" #, current_pos + pos_in_motif, bases
             if max_observed_score >= min_score:# and test_pos <= bases-flank_size: 
                 mm = scores.index(max(scores)) 
@@ -91,7 +91,7 @@ def find_repeats(seq,flank_size):
 # https://stackoverflow.com/questions/212358/binary-search-bisection-in-python
 def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
     hi = hi if hi is not None else len(a)  # hi defaults to len(a)   
-    pos = bisect_left(a, x, lo, hi)  # find insertion position
+    pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
     return (pos if pos != hi and a[pos] == x else -1) 
 #--------------------------------------------------------------------------------------------------------------------------------------
 
@@ -115,6 +115,7 @@ parser.add_argument('--tolerated_mismatches', help='Maximum number of tolerated 
 
 args = parser.parse_args()
 args.rus = set(args.rus)
+rus=args.rus
 
 if not all(i <= 6 and i >0 for i in args.rus):
     raise Exception('The repeat units, i.e. ru, supported are in the 1-6 range. Exiting..')
@@ -139,9 +140,11 @@ if os.path.exists(args.fasta) == False:
 #--------------------------------------------------------------------------------------------------------------------------------------
 
 fastafile = pysam.FastaFile(args.fasta)
-with open(args.bed) as bed:
-    reader = csv.reader(bed, delimiter="\t")
-    sites = list(reader)
+
+if args.mode in ['both','phased']:
+    with open(args.bed) as bed:
+        reader = csv.reader(bed, delimiter="\t")
+        sites = list(reader)
 
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 # load reference set
@@ -172,9 +175,9 @@ def unphased(sites,bam_path):
         if  len(reads) > args.min_coverage:
             for read in reads:
                 start_read = read.reference_start; end_read = read.reference_end
-                #read_sequence = read.seq
+                read_sequence = read.seq
                 # to remove soft-clipping, we can use
-                read_sequence = read.query_alignment_sequence ## the docs are here: http://pysam.readthedocs.io/en/latest/api.html
+                #read_sequence = read.query_alignment_sequence ## the docs are here: http://pysam.readthedocs.io/en/latest/api.html
                 reps = find_repeats_target(read_sequence,args.flank_size,ru)
                 if len(reps) > 0: 
                     aligned_pos = read.get_reference_positions(full_length=True)
@@ -221,13 +224,13 @@ def phased(sites,bam_path,index):
         reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality] 
         if  len(reads) > args.min_coverage:
             for read in reads:
-                #read_sequence = read.seq
-                read_sequence = read.query_alignment_sequence
+                read_sequence = read.seq
+                #read_sequence = read.query_alignment_sequence
                 reps = find_repeats(read_sequence,args.flank_size)
                 if len(reps) > 0: 
                     # get the SNP allele in this read
                     start_read = read.reference_start; end_read = read.reference_end
-                    aligned_pos = read.get_reference_positions(full_length=True)
+                    aligned_pos = read.get_reference_positions(full_length=True) #True) reports none for soft-clipped positions
                     try:
                         idx = aligned_pos.index(start) 
                     except:
@@ -240,6 +243,8 @@ def phased(sites,bam_path,index):
                         # use the reference set here to get the position on the right
                         ini = start_read + rs  #
                         idx2=binary_search(refset_ini_end,str(ini+1))
+                        #print "read, start_read, aligned_pos, idx, snp_read, microsatellite"
+                        #print read_sequence,start_read, aligned_pos, idx, snp_read, microsatellite,read_sequence[idx-3:idx+3],"\n\n\n"
                         if idx2 == -1:
                             continue
                         refset_now = refset[idx2]
@@ -267,6 +272,7 @@ def phased(sites,bam_path,index):
                             else:
                                 dict_out[key_now] = difference
     bamfile.close()
+    #print dict_out
     return dict_out
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------
@@ -291,7 +297,7 @@ if args.mode in ['both','phased']:
         read_lengths_tumor = phased(sites,args.tumor_bam,1)
     else:
         pool = mp.Pool(args.nprocs)
-        chunk_size= len(sites)/args.nprocs
+        chunk_size= int(len(sites)/args.nprocs)
         for index in np.arange(0,args.nprocs):
             if index != (args.nprocs-1):
                 pool.apply_async(phased, args = (sites[index*chunk_size:(index+1)*chunk_size], args.tumor_bam,index,), callback = log_result)
@@ -320,7 +326,7 @@ if args.mode in ['both','phased']:
         read_lengths_normal = phased(sites,args.normal_bam,1)
     else:
         pool = mp.Pool(args.nprocs)
-        chunk_size= len(sites)/args.nprocs
+        chunk_size= int(len(sites)/args.nprocs)
         for index in np.arange(0,args.nprocs):
             if index != (args.nprocs-1):
                 pool.apply_async(phased, args = (sites[index*chunk_size:(index+1)*chunk_size], args.normal_bam,index,), callback = log_result)
@@ -373,8 +379,7 @@ if args.mode in ['both','unphased']:
     def log_result(result):
         read_lengths_tumor_unphased.append(result)
     pool = mp.Pool(args.nprocs)
-    chunk_size= int(np.round( len(refset)/args.nprocs ))
-    print chunk_size
+    chunk_size= int( len(refset)/args.nprocs )
     
     if args.nprocs == 0:
         print "The value of the argument nprocs needs to be at least 1\n\n"
@@ -385,7 +390,6 @@ if args.mode in ['both','unphased']:
         read_lengths_tumor_unphased = unphased(refset,args.tumor_bam)
     else:
         for index in np.arange(0,args.nprocs):
-            print index, chunk_size
             if index != (args.nprocs-1):
                 pool.apply_async(unphased, args = (refset[index*chunk_size:(index+1)*chunk_size], args.tumor_bam,), callback = log_result)
             else:
@@ -440,7 +444,7 @@ if args.mode in ['both','unphased']:
                 pval = stats.ks_2samp(nor,canc)[1] #read_lengths_normal_unphased[i][name], read_lengths_tumor_unphased[i][name])[1]
                 mo = stats.mode(nor)
                 percentage = (nor == mo).sum() / len(nor)
-                confidence = "high" if percentage >=.85 else "low"
+                confidence = "high" if percentage >=.7 else "low"
                 f.write(name+"\t"+ ",".join([str(x) for x in nor])  +"\t"+ ",".join([str(x) for x in canc ]) +"\t"+str(pval)+"\t"+confidence+"\n" )
     f.close()
 
