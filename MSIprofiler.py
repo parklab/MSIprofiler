@@ -145,27 +145,37 @@ args = parser.parse_args()
 args.rus = set(args.rus)
 rus=args.rus
 
-if not all(i <= 6 and i >0 for i in args.rus):
-    raise Exception('The repeat units, i.e. ru, supported are in the 1-6 range. Exiting..')
+if not all(6 >= i > 0 for i in repeat_units):
+    raise RuntimeError(
+        'The repeat units, i.e. ru, supported are in the 1-6 range. Exiting..'
+    )
 
-if args.mode not in ['both','phased','unphased']:
-    raise Exception('The mode argument needs to be one of the following: both, phased, unphased. Exiting..')
+if args.mode not in ['both', 'phased', 'unphased']:
+    raise RuntimeError(
+        'The mode argument needs to be one of the following: '
+        'both, phased, unphased. Exiting..'
+    )
 
-if os.path.exists(args.tumor_bam) == False:
-    raise "Tumor/case bam file does not exist. Exiting.."
+if not os.path.exists(args.tumor_bam):
+    raise RuntimeError("Tumor/case bam file does not exist. Exiting..")
 
-if os.path.exists(args.normal_bam) == False:
-    raise "Normal bam file does not exist. Exiting."
+if not os.path.exists(args.normal_bam):
+    raise RuntimeError("Normal bam file does not exist. Exiting.")
 
-if os.path.exists(args.reference_set) == False and args.mode in ['both','unphased']:
-    raise "Reference set file does not exist. Exiting.."
+if (not os.path.exists(args.reference_set) and
+            args.mode in ['both', 'unphased']):
+    raise RuntimeError("Reference set file does not exist. Exiting..")
 
-if os.path.exists(args.bed) == False and args.mode in ['both','phased']:
-    raise "Bed file containing heterozygous SNPs does not exist. Exiting.."
+if not os.path.exists(args.bed) and args.mode in ['both', 'phased']:
+    raise RuntimeError(
+        "Bed file containing heterozygous SNPs does not exist. Exiting.."
+    )
 
-if os.path.exists(args.fasta) == False:
-    raise "Fasta file correspoding to the reference genome does not exist. Exiting.."
-#--------------------------------------------------------------------------------------------------------------------------------------
+if not os.path.exists(args.fasta):
+    raise RuntimeError(
+        "Fasta file correspoding to the reference "
+        "genome does not exist. Exiting.."
+    )
 
 fastafile = pysam.FastaFile(args.fasta)
 
