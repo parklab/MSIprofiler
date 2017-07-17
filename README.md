@@ -21,28 +21,22 @@ Isidro Cortes-Ciriano et al. Nat. Commun. 2017 (https://www.nature.com/articles/
 MSIprofiler is free for academic use **only**. 
 For non-academic use, please email Dr. Tatiana Demidova-Rice at Harvard University Office of Technology Development (tatiana\_demidova-rice@harvard.edu)
 
-# Requirements
+# Pre-reqs
 
-MSIprofiler is written entirely in python and has been developed using the following python and library versions:
+MSIprofiler is written entirely in python and has been developed using the following python version:
+- **python**: 2.7.6 (default, Aug  3 2015, 17:43:52)  [GCC 4.4.7 20120313 (Red Hat 4.4.7-11)] 
 
-- python: 2.7.6 (default, Aug  3 2015, 17:43:52)  [GCC 4.4.7 20120313 (Red Hat 4.4.7-11)] 
-- numpy: 1.10.1
-- scipy: 0.17.0
-- csv: 1.0
-- multiprocessing: 0.70a1
-- argparse: 1.1
-- pysam: 0.10.0
-- bisect: 2.1
+We use pip and virtual enviornments to take care of our dependency management
+- [**pip**](https://pip.pypa.io/en/stable/installing/)
+- [**virtualenvwrapper**](https://virtualenvwrapper.readthedocs.io/en/latest/install.html#installation) (optional, but recommended)
 
 
 # Usage
 
-First clone the repository to your computer:
 
-```sh
-$ git clone https://github.com/parklab/MSIprofiler.git
-$ cd MSIprofiler
-```
+`$ git clone https://github.com/parklab/MSIprofiler.git && cd MSIprofiler`
+`$ mkvirtualenv MSIprofiler-env` (optional, but recommended)
+`$ pip install -r requirements.txt`
 
 ## Detection of microsatellites in the human genome
   - MSIprofiler uses a high-confidence reference set of microsatellites derived from the human genome.
