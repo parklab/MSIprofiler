@@ -21,69 +21,6 @@ from sputnik_target import find_repeats_target
 #from parameters import *
 #--------------------------------------------------------------------------------------------------------------------------------------
 
-def find_repeats(seq,flank_size):
-    bases=len(seq) 
-    flank_size = flank_size-1
-    # save output as a list of lists
-    out = []; exclude=set() # use sets: they are much faster to apply 'in'
-    for ru in rus:
-        positions_motif = range(0,ru)
-        nb_positions_motif = len(positions_motif)
-        not_found = True
-        base = flank_size 
-        while base < bases-flank_size: #and base not in exclude:
-            if base in exclude:
-                base+=1
-                continue
-            elif not_found:
-                test_pos=base+ru
-                current_pos=base
-            else:
-                current_pos=base
-                not_found=True
-                test_pos=test_pos+ru
-            pos_in_motif = 0
-            score = 0; depth = 0; keep = 0
-            max_observed_score = 0
-            scores = []
-            while ( (test_pos ) < (bases-flank_size) )  and  score > fail_score and test_pos not in exclude: #XX the minus one check
-                match = (seq[current_pos + pos_in_motif] == seq[test_pos])
-                if match:
-                    test_pos+=1
-                    pos_in_motif = positions_motif[(pos_in_motif + 1) % nb_positions_motif]
-                    score+=match_score
-                    scores.append(score)
-                    depth = 0
-                else: 
-                    score+=mismatch_score
-                    scores.append(score)
-                    pos_in_motif = positions_motif[(pos_in_motif + 1) % nb_positions_motif]
-                    if score > fail_score and depth < 5:
-                        depth+=1
-                        test_pos +=1
-                # keep track of the best observed score
-                if score > max_observed_score:
-                    max_observed_score = score
-                #debugging
-            #print "RU current_pos  pos_in_motif  test_pos   bases, score"
-                #print ru, current_pos, pos_in_motif, test_pos, bases,score,"\n" #, current_pos + pos_in_motif, bases
-            if max_observed_score >= min_score:# and test_pos <= bases-flank_size: 
-                mm = scores.index(max(scores)) 
-                mm = mm +ru
-                if base+mm < (bases-flank_size): # repeat not overlapping flanking region
-                   out.append( [ru, base, base+mm, seq[base:base+mm+1]])
-                   not_found = False
-                exclude.update(range(base,base+mm+1)) 
-                test_pos = base + mm
-                base = test_pos
-            else:
-                pass
-            base+=1
-        else:
-            base+=1
-    return out
-    
-
 parser = argparse.ArgumentParser(description='MSIprofiler serves to detect microsatellite instability from sequencing data. Type MSIprofiler.py --help for further instructions.')
 parser.add_argument('--tumor_bam', help='Tumor bam file name',required=True)
 parser.add_argument('--normal_bam', help='Normal bam file name',required=True)
