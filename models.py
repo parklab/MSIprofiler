@@ -94,7 +94,8 @@ class MicroSatelliteProfiler:
                 self.min_microsatellite_length,
                 self.max_microsatellite_length
             )
-            ]
+        ]
+        self.reference_set_ini_end = [x[1] for x in self.reference_set]
 
         with open(self.bed_filename) as bed:
             reader = csv.reader(bed, delimiter="\t")
@@ -102,8 +103,6 @@ class MicroSatelliteProfiler:
 
     def run_phased(self):
         print "PHASED: Extracting MS repeats from tumor bam file..\n"
-
-        reference_set_ini_end = [x[1] for x in self.reference_set]
 
         # This list will contain the dictionaries
         # returned by the different processes
@@ -128,51 +127,24 @@ class MicroSatelliteProfiler:
         else:
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
-                    self.pool.apply_async(
-                        phased,
-                        args=(
-                            self.tumor_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set,
-                            reference_set_ini_end,
-                            self.repeat_units,
-                            self.sites[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.tolerated_mismatches
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.tumor_bam,
+                        log_result,
+                        self.sites[
+                          index * self.chunk_size:(index + 1) * self.chunk_size
+                        ]
                     )
                 else:
-                    self.pool.apply_async(
-                        phased,
-                        args=(
-                            self.tumor_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set,
-                            reference_set_ini_end,
-                            self.repeat_units,
-                            self.sites[
-                                index * self.chunk_size: len(self.sites)
-                            ],
-                            self.tolerated_mismatches
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.tumor_bam,
+                        log_result,
+                        self.sites[index * self.chunk_size: len(self.sites)]
                     )
             # close the pool
             self.pool.close()
             self.pool.join()
 
         print "PHASED: tumor/case bam file processed correctly..\n"
-
         print "PHASED: extracting MS repeats from normal bam file..\n"
 
         read_lengths_normal = []
@@ -196,45 +168,20 @@ class MicroSatelliteProfiler:
         else:
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
-                   self.pool.apply_async(
-                        phased,
-                        args=(
-                            self.normal_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set,
-                            reference_set_ini_end,
-                            self.repeat_units,
-                            self.sites[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.tolerated_mismatches,
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.normal_bam,
+                        log_result,
+                        self.sites[
+                          index * self.chunk_size:(index + 1) * self.chunk_size
+                        ]
                     )
                 else:
-                   self.pool.apply_async(
-                        phased,
-                        args=(
-                            self.normal_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set,
-                            reference_set_ini_end,
-                            self.repeat_units,
-                            self.sites[
-                                index * self.chunk_size: len(self.sites)
-                            ],
-                            self.tolerated_mismatches,
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.normal_bam,
+                        log_result,
+                        self.sites[index * self.chunk_size: len(self.sites)],
                     )
+
             self.pool.close()
             self.pool.join()
 
@@ -297,39 +244,26 @@ class MicroSatelliteProfiler:
         else:
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
-                   self.pool.apply_async(
-                        unphased,
-                        args=(
-                            self.tumor_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.tolerated_mismatches,
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.tumor_bam,
+                        log_result,
+                        self.reference_set[
+                            index *
+                            self.chunk_size:(index + 1) *
+                            self.chunk_size
+                        ],
+                        is_phased=False
                     )
                 else:
-                   self.pool.apply_async(
-                        unphased,
-                        args=(
-                            self.tumor_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set[
-                                index * self.chunk_size:len(self.reference_set)
-                            ],
-                            self.tolerated_mismatches,
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.tumor_bam,
+                        log_result,
+                        self.reference_set[
+                            index * self.chunk_size:len(self.reference_set)
+                        ],
+                        is_phased=False
                     )
+
             self.pool.close()
             self.pool.join()
 
@@ -354,38 +288,24 @@ class MicroSatelliteProfiler:
         else:
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
-                   self.pool.apply_async(
-                        unphased,
-                        args=(
-                            self.normal_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.tolerated_mismatches,
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.normal_bam,
+                        log_result,
+                        self.reference_set[
+                            index *
+                            self.chunk_size:(index + 1) *
+                            self.chunk_size
+                        ],
+                        is_phased=False
                     )
                 else:
-                   self.pool.apply_async(
-                        unphased,
-                        args=(
-                            self.normal_bam,
-                            self.fasta_file,
-                            self.flank_size,
-                            self.mapping_quality,
-                            self.min_coverage,
-                            self.reference_set[
-                                index * self.chunk_size:len(self.reference_set)
-                            ],
-                            self.tolerated_mismatches,
-                        ),
-                        callback=log_result
+                    self._run_in_pool(
+                        self.normal_bam,
+                        log_result,
+                        self.reference_set[
+                            index * self.chunk_size:len(self.reference_set)
+                        ],
+                        is_phased=False
                     )
             self.pool.close()
             self.pool.join()
@@ -420,3 +340,46 @@ class MicroSatelliteProfiler:
                             [str(x) for x in nor]) + "\t" + ",".join(
                             [str(x) for x in canc]) + "\t" + str(
                             pval) + "\t" + confidence + "\n")
+
+    def _run_in_pool(self, bam, log_result, sites, is_phased=True):
+        """
+        Helper method to run utilities in the multiprocess Pool
+        :param bam:
+        :param log_result:
+        :param sites:
+        :param is_phased:
+        """
+        if is_phased:
+            self.pool.apply_async(
+                phased,
+                args=(
+                    bam,
+                    self.fasta_file,
+                    self.flank_size,
+                    self.mapping_quality,
+                    self.min_coverage,
+                    self.reference_set,
+                    self.reference_set_ini_end,
+                    self.repeat_units,
+                    sites,
+                    self.tolerated_mismatches
+                ),
+                callback=log_result
+            )
+        else:
+            self.pool.apply_async(
+                unphased,
+                args=(
+                    bam,
+                    self.fasta_file,
+                    self.flank_size,
+                    self.mapping_quality,
+                    self.min_coverage,
+                    self.reference_set,
+                    self.reference_set_ini_end,
+                    self.repeat_units,
+                    sites,
+                    self.tolerated_mismatches
+                ),
+                callback=log_result
+            )
