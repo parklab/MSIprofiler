@@ -119,7 +119,7 @@ class MicroSatelliteProfiler:
                 self.mapping_quality,
                 self.min_coverage,
                 self.reference_set,
-                reference_set_ini_end,
+                self.reference_set_ini_end,
                 self.repeat_units,
                 self.sites,
                 self.tolerated_mismatches
@@ -160,7 +160,7 @@ class MicroSatelliteProfiler:
                 self.mapping_quality,
                 self.min_coverage,
                 self.reference_set,
-                reference_set_ini_end,
+                self.reference_set_ini_end,
                 self.repeat_units,
                 self.sites,
                 self.tolerated_mismatches,
