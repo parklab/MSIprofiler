@@ -194,57 +194,6 @@ refset = [x for x in refsetgen]
 if args.mode in ['both','phased']:
     refset_ini_end = [x[1] for x in refset]
 
-#------------------------------------------------------------------------------------------------------------
-# Function to extract the MS lengths from the reads
-#------------------------------------------------------------------------------------------------------------
-def unphased(sites,bam_path):
-    bamfile = pysam.AlignmentFile(bam_path, "rb")
-    dict_out = {}; visited_reads = []
-    for site in sites:
-        start = int(site[1]); end = int(site[2])+1; chr=site[0]; ru=int(site[4])
-        reads = [read for read in bamfile.fetch(str(chr), start,start+1,multiple_iterators=True)] 
-        reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality] 
-        if  len(reads) > args.min_coverage:
-            for read in reads:
-                start_read = read.reference_start; end_read = read.reference_end
-                read_sequence = read.seq
-                # to remove soft-clipping, we can use
-                #read_sequence = read.query_alignment_sequence ## the docs are here: http://pysam.readthedocs.io/en/latest/api.html
-                reps = find_repeats_target(read_sequence,args.flank_size,ru)
-                if len(reps) > 0: 
-                    aligned_pos = read.get_reference_positions(full_length=True)
-                    try:
-                        idx = aligned_pos.index(start) 
-                    except:
-                        continue
-                    for microsatellite in reps:
-                        ru = microsatellite[0]; rs = microsatellite[1]; re = microsatellite[2]
-                        if start != start_read + rs + 1:# do not consider if there are ins/del upstream of the repeat
-                            continue 
-                        difference = re - rs + 1
-                        # get flinking sequence from reference
-                        flank_left_ref = fastafile.fetch("chr"+chr,start_read+rs-args.flank_size, start_read+rs).upper()
-                        flank_right_ref = fastafile.fetch("chr"+chr,int(site[2])-1,int(site[2])-1 +args.flank_size).upper() 
-                        # get flinking sequence from the reads
-                        posfl = (start_read+rs-args.flank_size)
-                        if posfl >= start_read:
-                            flank_left = read_sequence[rs-args.flank_size:rs];  mismatches_left = sum(a!=b for a, b in zip(flank_left,flank_left_ref))
-                        else:
-                            flank_left = ""; mismatches_left=10000
-                        posflr = start_read+re+args.flank_size
-                        if posflr <= end_read:
-                            flank_right = read_sequence[re:re+args.flank_size]; mismatches_right = sum(a!=b for a, b in zip(flank_right,flank_right_ref))
-                        else:
-                            flank_right = ""; mismatches_right=10000
-                        mismatches = mismatches_left + mismatches_right 
-                        if mismatches <= args.tolerated_mismatches: 
-                            key_now = site[0] + "\t"+site[1]+"\t"+site[2]+"\t"+site[3]+"\t"+site[4]+"\t"+site[5]#+"\t"+site[6]
-                            if dict_out.has_key(key_now):
-                                dict_out[key_now] = np.append(dict_out[key_now], difference)
-                            else:
-                                dict_out[key_now] = difference
-    bamfile.close()
-    return dict_out
 
 #------------------------------------------------------------------------------------------------------------
 def phased(sites,bam_path,index):

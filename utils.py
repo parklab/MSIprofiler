@@ -88,3 +88,98 @@ def loadcsv(filename, criterion1, criterion2):
             if int(row[5]) >= criterion1 and int(row[5]) <= criterion2:
                 yield row
 
+
+def phased(bam_path,
+           fastafile,
+           flank_size,
+           mapping_quality,
+           min_coverage,
+           refset,
+           refset_ini_end,
+           rus,
+           sites,
+           tolerated_mismatches):
+    bamfile = pysam.AlignmentFile(bam_path, "rb")
+    dict_out = {}
+
+    for site in sites:
+        start = int(site[1])
+        end = int(site[2])
+        chr = str(site[0])
+        bases = [site[3], site[4]]
+        reads = [read for read in bamfile.fetch(chr, start, end,
+                                                multiple_iterators=True)]  ## keep this as is, do not put conditions inside here
+        reads = [read for read in reads
+                 if read.is_proper_pair
+                 and not read.is_duplicate
+                 and read.mapping_quality >= mapping_quality]
+
+        if len(reads) > min_coverage:
+            for read in reads:
+                read_sequence = read.seq
+                # read_sequence = read.query_alignment_sequence
+                reps = find_repeats(read_sequence, flank_size, rus)
+                if len(reps) > 0:
+                    # get the SNP allele in this read
+                    start_read = read.reference_start
+                    end_read = read.reference_end
+                    aligned_pos = read.get_reference_positions(
+                        full_length=True)  # True) reports none for soft-clipped positions
+                    try:
+                        idx = aligned_pos.index(start)
+                    except:
+                        continue
+                    snp_read = read_sequence[idx]
+                    if snp_read not in bases:
+                        continue
+                    for microsatellite in reps:
+                        rs = microsatellite[1]
+                        re = microsatellite[2]
+                        difference = re - rs + 1
+
+                        # use the reference set here to get the position on the right
+                        ini = start_read + rs  #
+                        idx2 = binary_search(refset_ini_end, str(ini + 1))
+
+                        if idx2 == -1:
+                            continue
+                        refset_now = refset[idx2]
+                        diff_ref = int(refset_now[2]) - int(refset_now[1]) + 1
+                        flank_right_ref = fastafile.fetch("chr" + str(site[0]),
+                                                          ini + diff_ref,
+                                                          ini + diff_ref + flank_size).upper()
+                        flank_left_ref = fastafile.fetch("chr" + str(site[0]),
+                                                         ini - flank_size,
+                                                         ini).upper()
+                        posfl = (start_read + rs - flank_size)
+                        if posfl >= start_read:
+                            flank_left = read_sequence[
+                                         rs - flank_size:rs]
+                            mismatches_left = sum(a != b for a, b in
+                                                  zip(flank_left,
+                                                      flank_left_ref))
+                        else:
+                            mismatches_left = 10000
+                        posflr = start_read + re + flank_size
+                        if posflr <= end_read:
+                            flank_right = read_sequence[
+                                          re + 1:re + 1 + flank_size]
+                            mismatches_right = sum(a != b for a, b in
+                                                   zip(flank_right,
+                                                       flank_right_ref))
+                        else:
+                            mismatches_right = 10000
+                        mismatches = mismatches_left + mismatches_right
+
+                        if mismatches <= tolerated_mismatches:
+                            key_now = site[0] + "\t" + str(
+                                ini) + "\t" + snp_read + "\t" + str(site[1])
+                            if dict_out.has_key(key_now):
+                                dict_out[key_now] = np.append(
+                                    dict_out[key_now], difference)
+                            else:
+                                dict_out[key_now] = difference
+    bamfile.close()
+    return dict_out
+
+
