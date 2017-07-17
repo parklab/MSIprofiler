@@ -194,69 +194,6 @@ refset = [x for x in refsetgen]
 if args.mode in ['both','phased']:
     refset_ini_end = [x[1] for x in refset]
 
-
-#------------------------------------------------------------------------------------------------------------
-def phased(sites,bam_path,index):
-    bamfile = pysam.AlignmentFile(bam_path, "rb")
-    dict_out = {}; visited_reads = []
-    for site in sites:
-        start = int(site[1]);  end = int(site[2]);  chr=str(site[0]); base1 = site[3]; base2=site[4]; bases = [site[3], site[4] ]
-        reads = [read for read in bamfile.fetch(chr, start,end ,multiple_iterators=True)] ## keep this as is, do not put conditions inside here
-        reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality] 
-        if  len(reads) > args.min_coverage:
-            for read in reads:
-                read_sequence = read.seq
-                #read_sequence = read.query_alignment_sequence
-                reps = find_repeats(read_sequence,args.flank_size)
-                if len(reps) > 0: 
-                    # get the SNP allele in this read
-                    start_read = read.reference_start; end_read = read.reference_end
-                    aligned_pos = read.get_reference_positions(full_length=True) #True) reports none for soft-clipped positions
-                    try:
-                        idx = aligned_pos.index(start) 
-                    except:
-                        continue
-                    snp_read = read_sequence[idx]
-                    if snp_read not in bases:
-                        continue
-                    for microsatellite in reps:
-                        ru = microsatellite[0]; rs = microsatellite[1]; re = microsatellite[2]; difference = re - rs +1
-                        # use the reference set here to get the position on the right
-                        ini = start_read + rs  #
-                        idx2=binary_search(refset_ini_end,str(ini+1))
-                        #print "read, start_read, aligned_pos, idx, snp_read, microsatellite"
-                        #print read_sequence,start_read, aligned_pos, idx, snp_read, microsatellite,read_sequence[idx-3:idx+3],"\n\n\n"
-                        if idx2 == -1:
-                            continue
-                        refset_now = refset[idx2]
-                        diff_ref = int(refset_now[2])- int(refset_now[1])  + 1
-                        flank_right_ref = fastafile.fetch("chr"+str(site[0]), ini +diff_ref, ini +diff_ref+args.flank_size).upper()
-                        flank_left_ref = fastafile.fetch("chr"+str(site[0]),ini-args.flank_size, ini).upper()
-                        posfl = (start_read+rs-args.flank_size)
-                        if posfl >= start_read:
-                            flank_left = read_sequence[rs-args.flank_size:rs]; mismatches_left = sum(a!=b for a, b in zip(flank_left,flank_left_ref))
-                        else:
-                            flank_left = ""; mismatches_left = 10000
-                        posflr = start_read+re+args.flank_size
-                        if posflr <= end_read:
-                            flank_right = read_sequence[re+1:re+1+args.flank_size]; mismatches_right = sum(a!=b for a, b in zip(flank_right,flank_right_ref))
-                        else:
-                            flank_right = ""; mismatches_right = 10000
-                        mismatches = mismatches_left + mismatches_right 
-                        #print microsatellite,difference, site,snp_read,read_sequence[idx-2:idx+2],read_sequence[idx-10:idx+10], diff_ref,flank_right, flank_right_ref, "     ", flank_left, flank_left_ref,"  ",ini,start_read+rs,"\n\n"
-                        #print read,"\n\n"
-                            #print microsatellite,flank_right, flank_right_ref,flank_right_ref, "     ", flank_left, flank_left_ref,flank_left_ref,"  ",ini,start_read+rs,"\n\n"
-                        if mismatches <= args.tolerated_mismatches: 
-                            key_now = site[0] + "\t"+str(ini)+"\t"+snp_read+"\t"+str(site[1])
-                            if dict_out.has_key(key_now):
-                                dict_out[key_now] = np.append(dict_out[key_now], difference)
-                            else:
-                                dict_out[key_now] = difference
-    bamfile.close()
-    #print dict_out
-    return dict_out
-
-#--------------------------------------------------------------------------------------------------------------------------------------------------
 # PHASED
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 if args.mode in ['both','phased']:
