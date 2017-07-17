@@ -12,25 +12,9 @@ import multiprocessing as mp
 import argparse
 import csv
 import numpy as np
-import bisect
-from bisect_function import binary_search
 from scipy import stats
-from scipy.stats import mannwhitneyu
-#from sputnik import find_repeats
-from sputnik_target import find_repeats_target
-#from parameters import *
-#--------------------------------------------------------------------------------------------------------------------------------------
+from .utils import loadcsv, unphased, phased
 
-parser = argparse.ArgumentParser(description='MSIprofiler serves to detect microsatellite instability from sequencing data. Type MSIprofiler.py --help for further instructions.')
-parser.add_argument('--tumor_bam', help='Tumor bam file name',required=True)
-parser.add_argument('--normal_bam', help='Normal bam file name',required=True)
-parser.add_argument('--bed', help='Input bedfile name',required=True)
-parser.add_argument('--fasta', help='Input fasta reference file name',required=True)
-parser.add_argument('--reference_set', help='Input reference set of microsatellites',required=True)
-parser.add_argument('--output_prefix', help='Prefix for the output files',required=True)
-parser.add_argument('--mode', help='Both, phased, unphased',required=True)
-parser.add_argument('--nprocs', help='Number of processes',required=True,type=int)
-parser.add_argument('-ru', dest='rus',default=[], help='MS repeats units to be considered', type=int, action='append')
 parser = argparse.ArgumentParser(
     description=(
         'MSIprofiler serves to detect microsatellite instability '
