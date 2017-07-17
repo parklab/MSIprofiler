@@ -83,13 +83,6 @@ def find_repeats(seq,flank_size):
             base+=1
     return out
     
-#--------------------------------------------------------------------------------------------------------------------------------------
-# https://stackoverflow.com/questions/212358/binary-search-bisection-in-python
-def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
-    hi = hi if hi is not None else len(a)  # hi defaults to len(a)   
-    pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
-    return (pos if pos != hi and a[pos] == x else -1) 
-#--------------------------------------------------------------------------------------------------------------------------------------
 
 parser = argparse.ArgumentParser(description='MSIprofiler serves to detect microsatellite instability from sequencing data. Type MSIprofiler.py --help for further instructions.')
 parser.add_argument('--tumor_bam', help='Tumor bam file name',required=True)
