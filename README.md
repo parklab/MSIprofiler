@@ -52,7 +52,7 @@ $ ./scripts/download_chromosomes_fa.sh
 
 - Once the fasta sequences are downloaded, run the following two scripts in the root directory of MSIprofiler: 
 ```sh
-$ python /scripts/get_reference_set_from_fasta.py
+$ python scripts/get_reference_set_from_fasta.py
 $ ./scripts/sort_reference_sets.sh
 ```
 
