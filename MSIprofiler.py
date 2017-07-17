@@ -178,12 +178,6 @@ if args.mode in ['both','phased']:
 # load reference set
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
-def loadcsv(filename, criterion1,criterion2):
-    with open(filename, "rb") as csvfile:
-        datareader = csv.reader(csvfile, delimiter="\t")
-        for row in datareader:
-            if int(row[5]) >=criterion1 and int(row[5]) <= criterion2:
-                yield row
 
 refsetgen = loadcsv(args.reference_set,args.min_MS_length, args.max_MS_length)
 refset = [x for x in refsetgen]

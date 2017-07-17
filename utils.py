@@ -80,3 +80,11 @@ def find_repeats(seq, flank_size, rus, min_score=4):
             base += 1
     return out
 
+
+def loadcsv(filename, criterion1, criterion2):
+    with open(filename, "rb") as csvfile:
+        datareader = csv.reader(csvfile, delimiter="\t")
+        for row in datareader:
+            if int(row[5]) >= criterion1 and int(row[5]) <= criterion2:
+                yield row
+
