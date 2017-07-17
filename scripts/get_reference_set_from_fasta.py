@@ -1,7 +1,7 @@
 
 import sys
 #add option for notation: ensemble (1,2,3) o ucsc (chr1, chr2,..)
-from utils import find_repeats
+from ..utils import find_repeats
 
 chr = sys.argv[1]
 
