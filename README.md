@@ -33,9 +33,10 @@ We use pip and virtual enviornments to take care of our dependency management
 
 # Usage
 
-
 `$ git clone https://github.com/parklab/MSIprofiler.git && cd MSIprofiler`
+
 `$ mkvirtualenv MSIprofiler-env` (optional, but recommended)
+
 `$ pip install -r requirements.txt`
 
 ## Detection of microsatellites in the human genome
