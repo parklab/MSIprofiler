@@ -10,12 +10,12 @@ MISMATCH_SCORE = -6  # score penalty for a mismatch
 FAIL_SCORE = -1  # score value to stop searching
 # detected is min_score + 4
 
+
 # https://stackoverflow.com/questions/212358/binary-search-bisection-in-python
-def binary_search(a, x, lo=0,
-                  hi=None):  # can't use a to specify default for hi
-    hi = hi if hi is not None else len(a)  # hi defaults to len(a)
-    pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
-    return (pos if pos != hi and a[pos] == x else -1)
+def binary_search(a, x, lo=0, hi=None):
+    hi = hi if hi is not None else len(a)
+    pos = bisect.bisect_left(a, x, lo, hi)
+    return pos if pos != hi and a[pos] == x else -1
 
 
 def find_repeats(seq, flank_size, rus, min_score=4):
@@ -46,9 +46,9 @@ def find_repeats(seq, flank_size, rus, min_score=4):
             depth = 0
             max_observed_score = 0
             scores = []
-            while ((test_pos) < (
-                        bases - flank_size)) and score > FAIL_SCORE and test_pos not \
-                    in exclude:  # XX the minus one check
+            while ((test_pos) < (bases - flank_size) and
+                score > FAIL_SCORE and
+                test_pos not in exclude):  # XX the minus one check
                 match = (seq[current_pos + pos_in_motif] == seq[test_pos])
                 if match:
                     test_pos += 1
@@ -72,9 +72,10 @@ def find_repeats(seq, flank_size, rus, min_score=4):
             if max_observed_score >= min_score:  # and test_pos <=
                 # bases-flank_size:
                 mm = scores.index(max(scores))
-                mm = mm + ru
-                if base + mm < (
-                            bases - flank_size):  # repeat not overlapping flanking region
+                mm += ru
+
+                # repeat not overlapping flanking region
+                if base + mm < (bases - flank_size):
                     out.append([ru, base, base + mm, seq[base:base + mm + 1]])
                     not_found = False
                 exclude.update(range(base, base + mm + 1))
@@ -106,6 +107,20 @@ def phased(bam_path,
            rus,
            sites,
            tolerated_mismatches):
+    """
+    Extract the MS lengths from the reads
+    :param bam_path:
+    :param fastafile:
+    :param flank_size:
+    :param mapping_quality:
+    :param min_coverage:
+    :param refset:
+    :param refset_ini_end:
+    :param rus:
+    :param sites:
+    :param tolerated_mismatches:
+    :return:
+    """
     bamfile = pysam.AlignmentFile(bam_path, "rb")
     dict_out = {}
 
@@ -114,8 +129,11 @@ def phased(bam_path,
         end = int(site[2])
         chr = str(site[0])
         bases = [site[3], site[4]]
-        reads = [read for read in bamfile.fetch(chr, start, end,
-                                                multiple_iterators=True)]  ## keep this as is, do not put conditions inside here
+
+        # Keep this as is, do not put conditions inside here
+        reads = [read for read in
+                 bamfile.fetch(chr, start, end, multiple_iterators=True)
+        ]
         reads = [read for read in reads
                  if read.is_proper_pair
                  and not read.is_duplicate
@@ -130,8 +148,12 @@ def phased(bam_path,
                     # get the SNP allele in this read
                     start_read = read.reference_start
                     end_read = read.reference_end
+
+                    # True) reports none for soft-clipped positions
                     aligned_pos = read.get_reference_positions(
-                        full_length=True)  # True) reports none for soft-clipped positions
+                        full_length=True
+                    )
+
                     try:
                         idx = aligned_pos.index(start)
                     except:
@@ -144,7 +166,8 @@ def phased(bam_path,
                         re = microsatellite[2]
                         difference = re - rs + 1
 
-                        # use the reference set here to get the position on the right
+                        # use the reference set here
+                        # to get the position on the right
                         ini = start_read + rs  #
                         idx2 = binary_search(refset_ini_end, str(ini + 1))
 
@@ -152,12 +175,18 @@ def phased(bam_path,
                             continue
                         refset_now = refset[idx2]
                         diff_ref = int(refset_now[2]) - int(refset_now[1]) + 1
-                        flank_right_ref = fastafile.fetch("chr" + str(site[0]),
-                                                          ini + diff_ref,
-                                                          ini + diff_ref + flank_size).upper()
-                        flank_left_ref = fastafile.fetch("chr" + str(site[0]),
-                                                         ini - flank_size,
-                                                         ini).upper()
+                        flank_right_ref = fastafile.fetch(
+                            "chr" + str(site[0]),
+                            ini + diff_ref,
+                            ini + diff_ref + flank_size
+                        ).upper()
+
+                        flank_left_ref = fastafile.fetch(
+                            "chr" + str(site[0]),
+                            ini - flank_size,
+                            ini
+                        ).upper()
+
                         posfl = (start_read + rs - flank_size)
                         if posfl >= start_read:
                             flank_left = read_sequence[
@@ -170,10 +199,14 @@ def phased(bam_path,
                         posflr = start_read + re + flank_size
                         if posflr <= end_read:
                             flank_right = read_sequence[
-                                          re + 1:re + 1 + flank_size]
+                                re + 1:re + 1 + flank_size
+                            ]
                             mismatches_right = sum(a != b for a, b in
-                                                   zip(flank_right,
-                                                       flank_right_ref))
+                                                   zip(
+                                                       flank_right,
+                                                       flank_right_ref
+                                                   )
+                                                )
                         else:
                             mismatches_right = 10000
                         mismatches = mismatches_left + mismatches_right
@@ -190,9 +223,6 @@ def phased(bam_path,
     return dict_out
 
 
-# ------------------------------------------------------------------------------------------------------------
-# Function to extract the MS lengths from the reads
-# ------------------------------------------------------------------------------------------------------------
 def unphased(bam_path,
              fastafile,
              flank_size,
@@ -200,6 +230,16 @@ def unphased(bam_path,
              min_coverage,
              sites,
              tolerated_mismatches):
+    """
+    Extract the MS lengths from the reads
+    :param bam_path:
+    :param fastafile:
+    :param flank_size:
+    :param mapping_quality:
+    :param min_coverage:
+    :param sites:
+    :param tolerated_mismatches:
+    """
 
     bamfile = pysam.AlignmentFile(bam_path, "rb")
     dict_out = {}
@@ -208,17 +248,26 @@ def unphased(bam_path,
         start = int(site[1])
         chr = site[0]
         ru = int(site[4])
-        reads = [read for read in bamfile.fetch(str(chr), start, start + 1,
-                                                multiple_iterators=True)]
+        reads = [read for read in bamfile.fetch(
+            str(chr),
+            start,
+            start + 1,
+            multiple_iterators=True)
+        ]
         reads = [read for read in reads if
-                 read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= mapping_quality]
+                 read.is_proper_pair and
+                 not read.is_duplicate and
+                 read.mapping_quality >= mapping_quality]
+
         if len(reads) > min_coverage:
             for read in reads:
                 start_read = read.reference_start
                 end_read = read.reference_end
                 read_sequence = read.seq
                 # to remove soft-clipping, we can use
-                # read_sequence = read.query_alignment_sequence ## the docs are here: http://pysam.readthedocs.io/en/latest/api.html
+                # read_sequence = read.query_alignment_sequence ##
+                # The docs are here:
+                # http://pysam.readthedocs.io/en/latest/api.html
                 reps = find_repeats_target(read_sequence, flank_size, ru)
                 if len(reps) > 0:
                     aligned_pos = read.get_reference_positions(
@@ -228,20 +277,25 @@ def unphased(bam_path,
                     except:
                         continue
                     for microsatellite in reps:
-                        ru = microsatellite[0];
-                        rs = microsatellite[1];
+                        ru = microsatellite[0]
+                        rs = microsatellite[1]
                         re = microsatellite[2]
-                        if start != start_read + rs + 1:  # do not consider if there are ins/del upstream of the repeat
+                        # do not consider if there are
+                        # ins/del upstream of the repeat
+                        if start != start_read + rs + 1:
                             continue
                         difference = re - rs + 1
                         # get flinking sequence from reference
-                        flank_left_ref = fastafile.fetch("chr" + chr,
-                                                         start_read + rs - flank_size,
-                                                         start_read + rs).upper()
-                        flank_right_ref = fastafile.fetch("chr" + chr,
-                                                          int(site[2]) - 1,
-                                                          int(site[
-                                                                  2]) - 1 + flank_size).upper()
+                        flank_left_ref = fastafile.fetch(
+                            "chr" + chr,
+                            start_read + rs - flank_size,
+                            start_read + rs
+                        ).upper()
+                        flank_right_ref = fastafile.fetch(
+                            "chr" + chr,
+                            int(site[2]) - 1,
+                            int(site[2]) - 1 + flank_size
+                        ).upper()
                         # get flinking sequence from the reads
                         posfl = (start_read + rs - flank_size)
                         if posfl >= start_read:
