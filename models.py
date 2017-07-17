@@ -14,7 +14,7 @@ from .utils import loadcsv, phased, unphased
 
 class MicroSatelliteProfiler:
     """
-    Class that aids in the detection of  microsatellite instability (MSI) from
+    Class that aids in the detection of microsatellite instability (MSI) from
     sequencing data
     """
 
