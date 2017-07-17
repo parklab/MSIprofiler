@@ -126,8 +126,7 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-args.rus = set(args.rus)
-rus=args.rus
+repeat_units = set(args.rus)
 
 if not all(6 >= i > 0 for i in repeat_units):
     raise RuntimeError(
@@ -163,193 +162,347 @@ if not os.path.exists(args.fasta):
 
 fastafile = pysam.FastaFile(args.fasta)
 
-if args.mode in ['both','phased']:
+if args.mode in ['both', 'phased']:
     with open(args.bed) as bed:
         reader = csv.reader(bed, delimiter="\t")
         sites = list(reader)
 
-#----------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # load reference set
-#----------------------------------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
-
-refsetgen = loadcsv(args.reference_set,args.min_MS_length, args.max_MS_length)
+refsetgen = loadcsv(args.reference_set, args.min_MS_length, args.max_MS_length)
 refset = [x for x in refsetgen]
-if args.mode in ['both','phased']:
+if args.mode in ['both', 'phased']:
     refset_ini_end = [x[1] for x in refset]
 
+# -----------------------------------------------------------------------------
 # PHASED
-#--------------------------------------------------------------------------------------------------------------------------------------------------
-if args.mode in ['both','phased']:
-    #------------------------------------------------------
+# -----------------------------------------------------------------------------
+if args.mode in ['both', 'phased']:
+    # ------------------------------------------------------
     print "PHASED: Extracting MS repeats from tumor bam file..\n"
-    #------------------------------------------------------
+    # ------------------------------------------------------
     # this list will contain the dictionaries returned by the different processes
     read_lengths_tumor = []
 
+
     def log_result(result):
         read_lengths_tumor.append(result)
-    
+
+
     if args.nprocs == None:
-        args.nprocs = mp.cpu_count() 
+        args.nprocs = mp.cpu_count()
     if args.nprocs == 0:
         print "The value of the argument nprocs needs to be at least 1\n\n"
         raise
     if args.nprocs == 1:
-        read_lengths_tumor = phased(sites,args.tumor_bam,1)
+        read_lengths_tumor = phased(
+            args.tumor_bam,
+            fastafile,
+            args.flank_size,
+            args.mapping_quality,
+            args.min_coverage,
+            refset,
+            refset_ini_end,
+            repeat_units,
+            sites,
+            args.tolerated_mismatches
+        )
     else:
         pool = mp.Pool(args.nprocs)
-        chunk_size= int(len(sites)/args.nprocs)
-        for index in np.arange(0,args.nprocs):
-            if index != (args.nprocs-1):
-                pool.apply_async(phased, args = (sites[index*chunk_size:(index+1)*chunk_size], args.tumor_bam,index,), callback = log_result)
+        chunk_size = int(len(sites) / args.nprocs)
+        for index in np.arange(0, args.nprocs):
+            if index != (args.nprocs - 1):
+                pool.apply_async(
+                    phased,
+                    args=(
+                        args.tumor_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset,
+                        refset_ini_end,
+                        repeat_units,
+                        sites[index * chunk_size:(index + 1) * chunk_size],
+                        args.tolerated_mismatches
+                    ),
+                    callback=log_result
+                )
             else:
-                pool.apply_async(phased, args = (sites[index*chunk_size: len(sites)], args.tumor_bam,index,), callback = log_result)
+                pool.apply_async(
+                    phased,
+                    args=(
+                        args.tumor_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset,
+                        refset_ini_end,
+                        repeat_units,
+                        sites[index * chunk_size: len(sites)],
+                        args.tolerated_mismatches
+                    ),
+                    callback=log_result
+                )
         # close the pool
         pool.close()
         pool.join()
 
-    
-    #------------------------------------------------------
     print "PHASED: tumor/case bam file processed correctly..\n"
-    #------------------------------------------------------
-    #------------------------------------------------------------------------------------------------------------
-    #------------------------------------------------------
+
     print "PHASED: extracting MS repeats from normal bam file..\n"
-    #------------------------------------------------------
+
     read_lengths_normal = []
+
+
     def log_result(result):
         read_lengths_normal.append(result)
-    
-    if args.nprocs == None:
-        args.nprocs = mp.cpu_count() 
-    
+
+
+    if args.nprocs is None:
+        args.nprocs = mp.cpu_count()
+
     if args.nprocs == 1:
-        read_lengths_normal = phased(sites,args.normal_bam,1)
+        read_lengths_normal = phased(sites, args.normal_bam, 1)
     else:
         pool = mp.Pool(args.nprocs)
-        chunk_size= int(len(sites)/args.nprocs)
-        for index in np.arange(0,args.nprocs):
-            if index != (args.nprocs-1):
-                pool.apply_async(phased, args = (sites[index*chunk_size:(index+1)*chunk_size], args.normal_bam,index,), callback = log_result)
+        chunk_size = int(len(sites) / args.nprocs)
+        for index in np.arange(0, args.nprocs):
+            if index != (args.nprocs - 1):
+                pool.apply_async(
+                    phased,
+                    args=(
+                        args.normal_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset,
+                        refset_ini_end,
+                        repeat_units,
+                        sites[index * chunk_size:(index + 1) * chunk_size],
+                        args.tolerated_mismatches,
+                    ),
+                    callback=log_result
+                )
             else:
-                pool.apply_async(phased, args = (sites[index*chunk_size:len(sites)], args.normal_bam,index,), callback = log_result)
+                pool.apply_async(
+                    phased,
+                    args=(
+                        args.normal_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset,
+                        refset_ini_end,
+                        repeat_units,
+                        sites[index * chunk_size: len(sites)],
+                        args.tolerated_mismatches,
+                    ),
+                    callback=log_result
+                )
         pool.close()
         pool.join()
-    
-    #------------------------------------------------------
+
+    # ------------------------------------------------------
     print "Normal bam file processed correctly..\n"
-    #------------------------------------------------------
-    f = open(args.output_prefix+'_phased.txt', 'w')
-    if args.nprocs ==1:
+    # ------------------------------------------------------
+    f = open(args.output_prefix + '_phased.txt', 'w')
+    if args.nprocs == 1:
         all_normal = read_lengths_normal[0]
         all_tumor = read_lengths_tumor[0]
     else:
         all_normal = read_lengths_normal[0]
         all_tumor = read_lengths_tumor[0]
 
-    if args.nprocs >1:
-        for i in range(1,args.nprocs):
+    if args.nprocs > 1:
+        for i in range(1, args.nprocs):
             all_normal.update(read_lengths_normal[i])
             all_tumor.update(read_lengths_tumor[i])
 
-    keys_normal =  set(all_normal);  keys_tumor =  set(all_tumor)
-    common_keys= keys_tumor.intersection(keys_normal); counter = 0
-        
+    keys_normal = set(all_normal)
+    keys_tumor = set(all_tumor)
+    common_keys = keys_tumor.intersection(keys_normal)
+    counter = 0
+
     for name in common_keys:
         nor = all_normal[name]
         canc = all_tumor[name]
-        if isinstance(nor,int) == False and isinstance(canc,int) == False:
-            if len(nor) >= args.min_coverage and len(canc) >= args.min_coverage:
-                pval = stats.ks_2samp(nor, canc)[1] 
-                f.write(name+"\t"+ ",".join([str(x) for x in nor])  +"\t"+ ",".join([str(x) for x in canc ]) +"\t"+str(pval)+"\n" )
+        if isinstance(nor, int) == False and isinstance(canc, int) == False:
+            if len(nor) >= args.min_coverage and len(
+                    canc) >= args.min_coverage:
+                pval = stats.ks_2samp(nor, canc)[1]
+                f.write(name + "\t" + ",".join(
+                    [str(x) for x in nor]) + "\t" + ",".join(
+                    [str(x) for x in canc]) + "\t" + str(pval) + "\n")
     f.close()
-    print "Phased microsatellites writen to: "+args.output_prefix+'_phased.txt'
-    
-    #------------------------------------------------------
-    print "Calculation of the phased microsatellites finished successfully.."
-    #------------------------------------------------------
+    print "Phased microsatellites writen to: " + args.output_prefix + '_phased.txt'
 
-#-------------------------------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------
+    print "Calculation of the phased microsatellites finished successfully.."
+    # ------------------------------------------------------
+
+# -------------------------------------------------------------------------------------------------------------------------------------------
 # UNPHASED
-#-------------------------------------------------------------------------------------------------------------------------------------------
-if args.mode in ['both','unphased']:
-    #------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------
+if args.mode in ['both', 'unphased']:
+    # ------------------------------------------------------
     print "Extracting MS repeats (UNPHASED) from tumor bam file..\n"
-    #------------------------------------------------------
+    # ------------------------------------------------------
     read_lengths_tumor_unphased = []
+
+
     def log_result(result):
         read_lengths_tumor_unphased.append(result)
+
+
     pool = mp.Pool(args.nprocs)
-    chunk_size= int( len(refset)/args.nprocs )
-    
+    chunk_size = int(len(refset) / args.nprocs)
+
     if args.nprocs == 0:
         print "The value of the argument nprocs needs to be at least 1\n\n"
         raise
-    if args.nprocs == None:
-        args.nprocs = mp.cpu_count() 
+    if args.nprocs is None:
+        args.nprocs = mp.cpu_count()
     if args.nprocs == 1:
-        read_lengths_tumor_unphased = unphased(refset,args.tumor_bam)
+        read_lengths_tumor_unphased = unphased(
+            args.tumor_bam,
+            fastafile,
+            args.flank_size,
+            args.mapping_quality,
+            args.min_coverage,
+            refset,
+            args.tolerated_mismatches
+        )
     else:
-        for index in np.arange(0,args.nprocs):
-            if index != (args.nprocs-1):
-                pool.apply_async(unphased, args = (refset[index*chunk_size:(index+1)*chunk_size], args.tumor_bam,), callback = log_result)
+        for index in np.arange(0, args.nprocs):
+            if index != (args.nprocs - 1):
+                pool.apply_async(
+                    unphased,
+                    args=(
+                        args.tumor_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset[index * chunk_size:(index + 1) * chunk_size],
+                        args.tolerated_mismatches,
+                    ),
+                    callback=log_result
+                )
             else:
-                pool.apply_async(unphased, args = (refset[index*chunk_size:len(refset)], args.tumor_bam,), callback = log_result)
-        pool.close()
-        pool.join()
-    
-    #------------------------------------------------------
-    print "UNPHASED: tumor bam file processed correctly..\n"
-    #------------------------------------------------------
-    #------------------------------------------------------
-    print "Extracting MS repeats (UNPHASED) from normal bam file..\n"
-    #------------------------------------------------------
-    read_lengths_normal_unphased = []
-    def log_result(result):
-        read_lengths_normal_unphased.append(result)
-    pool = mp.Pool(args.nprocs)
-    
-    if args.nprocs == 1:
-        read_lengths_normal_unphased = unphased(refset,args.normal_bam)
-    else:
-        for index in np.arange(0,args.nprocs):
-            if index != (args.nprocs-1):
-                pool.apply_async(unphased, args = (refset[index*chunk_size:(index+1)*chunk_size], args.normal_bam,), callback = log_result)
-            else:
-                pool.apply_async(unphased, args = (refset[index*chunk_size:len(refset)], args.normal_bam,), callback = log_result)
+                pool.apply_async(
+                    unphased,
+                    args=(
+                        args.tumor_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset[index * chunk_size:len(refset)],
+                        args.tolerated_mismatches,
+                    ),
+                    callback=log_result
+                )
         pool.close()
         pool.join()
 
-    #------------------------------------------------------
+    # ------------------------------------------------------
+    print "UNPHASED: tumor bam file processed correctly..\n"
+    # ------------------------------------------------------
+    # ------------------------------------------------------
+    print "Extracting MS repeats (UNPHASED) from normal bam file..\n"
+    # ------------------------------------------------------
+    read_lengths_normal_unphased = []
+
+
+    def log_result(result):
+        read_lengths_normal_unphased.append(result)
+
+
+    pool = mp.Pool(args.nprocs)
+
+    if args.nprocs == 1:
+        read_lengths_normal_unphased = unphased(
+            args.normal_bam,
+            fastafile,
+            args.flank_size,
+            args.mapping_quality,
+            args.min_coverage,
+            refset,
+            args.tolerated_mismatches
+        )
+    else:
+        for index in np.arange(0, args.nprocs):
+            if index != (args.nprocs - 1):
+                pool.apply_async(
+                    unphased,
+                    args=(
+                        args.normal_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset[index * chunk_size:(index + 1) * chunk_size],
+                        args.tolerated_mismatches,
+                    ),
+                    callback=log_result
+                )
+            else:
+                pool.apply_async(
+                    unphased,
+                    args=(
+                        args.normal_bam,
+                        fastafile,
+                        args.flank_size,
+                        args.mapping_quality,
+                        args.min_coverage,
+                        refset[index * chunk_size:len(refset)],
+                        args.tolerated_mismatches,
+                    ),
+                    callback=log_result
+                )
+        pool.close()
+        pool.join()
+
+    # ------------------------------------------------------
     print "UNPHASED: normal bam file processed correctly..\n"
-    #------------------------------------------------------
-    f = open(args.output_prefix+'_unphased.txt', 'w')
+    # ------------------------------------------------------
+    f = open(args.output_prefix + '_unphased.txt', 'w')
     all_normal = read_lengths_normal_unphased[0]
     all_tumor = read_lengths_tumor_unphased[0]
 
-    if args.nprocs >1:
-        for i in range(1,args.nprocs):
+    if args.nprocs > 1:
+        for i in range(1, args.nprocs):
             all_normal.update(read_lengths_normal_unphased[i])
             all_tumor.update(read_lengths_tumor_unphased[i])
 
-    keys_normal =  set(all_normal)
-    keys_tumor =  set(all_tumor)
-    common_keys= keys_tumor.intersection(keys_normal)
+    keys_normal = set(all_normal)
+    keys_tumor = set(all_tumor)
+    common_keys = keys_tumor.intersection(keys_normal)
     counter = 0
-        
+
     for name in common_keys:
         nor = all_normal[name]
         canc = all_tumor[name]
-        if isinstance(nor,int) == False and isinstance(canc,int) == False:
-            if len(nor) >= args.min_coverage and len(canc) >= args.min_coverage:
-                pval = stats.ks_2samp(nor,canc)[1] #read_lengths_normal_unphased[i][name], read_lengths_tumor_unphased[i][name])[1]
+        if isinstance(nor, int) == False and isinstance(canc, int) == False:
+            if len(nor) >= args.min_coverage and len(
+                    canc) >= args.min_coverage:
+                pval = stats.ks_2samp(nor, canc)[
+                    1]  # read_lengths_normal_unphased[i][name], read_lengths_tumor_unphased[i][name])[1]
                 mo = stats.mode(nor)
                 percentage = (nor == mo).sum() / len(nor)
-                confidence = "high" if percentage >=.7 else "low"
-                f.write(name+"\t"+ ",".join([str(x) for x in nor])  +"\t"+ ",".join([str(x) for x in canc ]) +"\t"+str(pval)+"\t"+confidence+"\n" )
+                confidence = "high" if percentage >= .7 else "low"
+                f.write(name + "\t" + ",".join(
+                    [str(x) for x in nor]) + "\t" + ",".join(
+                    [str(x) for x in canc]) + "\t" + str(
+                    pval) + "\t" + confidence + "\n")
     f.close()
 
-#------------------------------------------------------
+# ------------------------------------------------------
 print "All calculations finished successfully!\n"
-#------------------------------------------------------
+# ------------------------------------------------------
