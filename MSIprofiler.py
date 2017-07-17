@@ -5,11 +5,7 @@
 # to make numpy divisions show decimal values by default:
 # https://stackoverflow.com/questions/1799527/numpy-show-decimal-values-in-array-results
 from __future__ import division
-match_score = 1 # score for a match
-mismatch_score = -6 # score penalty for a mismatch 
-fail_score = -1 # score value to stop searching
-min_score = 4 # minimum score value to pass. The minimum length of MS repeats detected is mon_score + 4
-#--------------------------------------------------------------------------------------------------------------------------------------
+
 import pysam
 import os
 import multiprocessing as mp
