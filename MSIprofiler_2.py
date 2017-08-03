@@ -5,8 +5,11 @@
 # to make numpy divisions show decimal values by default:
 # https://stackoverflow.com/questions/1799527/numpy-show-decimal-values-in-array-results
 from __future__ import division
+
+from bisect import bisect
+
 match_score = 1 # score for a match
-mismatch_score = -6 # score penalty for a mismatch 
+mismatch_score = -6 # score penalty for a mismatch
 fail_score = -1 # score value to stop searching
 min_score = 4 # minimum score value to pass. The minimum length of MS repeats detected is mon_score + 4
 #--------------------------------------------------------------------------------------------------------------------------------------
@@ -16,17 +19,16 @@ import multiprocessing as mp
 import argparse
 import csv
 import numpy as np
-import bisect
-from bisect_function import binary_search
+import utils
 from scipy import stats
-#from sputnik import find_repeats
-from sputnik_target import find_repeats_target
+#from sputnik import find_repeatsfrom sputnik_target import find_repeats_target
+
 #from parameters import *
 import pickle
 #--------------------------------------------------------------------------------------------------------------------------------------
 
 def find_repeats(seq,flank_size):
-    bases=len(seq) 
+    bases=len(seq)
     flank_size = flank_size-1
     # save output as a list of lists
     out = []; exclude=set() # use sets: they are much faster to apply 'in'
@@ -34,7 +36,7 @@ def find_repeats(seq,flank_size):
         positions_motif = range(0,ru)
         nb_positions_motif = len(positions_motif)
         not_found = True
-        base = flank_size 
+        base = flank_size
         while base < bases-flank_size: #and base not in exclude:
             if base in exclude:
                 base+=1
@@ -50,7 +52,7 @@ def find_repeats(seq,flank_size):
             score = 0; depth = 0; keep = 0
             max_observed_score = 0
             scores = []
-            while ( (test_pos ) < (bases-flank_size) )  and  score > fail_score and test_pos not in exclude: 
+            while ( (test_pos ) < (bases-flank_size) )  and  score > fail_score and test_pos not in exclude:
                 match = (seq[current_pos + pos_in_motif] == seq[test_pos])
                 if match:
                     test_pos+=1
@@ -58,7 +60,7 @@ def find_repeats(seq,flank_size):
                     score+=match_score
                     scores.append(score)
                     depth = 0
-                else: 
+                else:
                     score+=mismatch_score
                     scores.append(score)
                     pos_in_motif = positions_motif[(pos_in_motif + 1) % nb_positions_motif]
@@ -71,13 +73,13 @@ def find_repeats(seq,flank_size):
                 #debugging
             #print "RU current_pos  pos_in_motif  test_pos   bases, score"
                 #print ru, current_pos, pos_in_motif, test_pos, bases,score,"\n" #, current_pos + pos_in_motif, bases
-            if max_observed_score >= min_score:# and test_pos <= bases-flank_size: 
-                mm = scores.index(max(scores)) 
+            if max_observed_score >= min_score:# and test_pos <= bases-flank_size:
+                mm = scores.index(max(scores))
                 mm = mm +ru
                 if base+mm < (bases-flank_size): # repeat not overlapping flanking region
                    out.append( [ru, base, base+mm, seq[base:base+mm+1]])
                    not_found = False
-                exclude.update(range(base,base+mm+1)) 
+                exclude.update(range(base,base+mm+1))
                 test_pos = base + mm
                 base = test_pos
             else:
@@ -86,13 +88,13 @@ def find_repeats(seq,flank_size):
         else:
             base+=1
     return out
-    
+
 #--------------------------------------------------------------------------------------------------------------------------------------
 # https://stackoverflow.com/questions/212358/binary-search-bisection-in-python
 def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
-    hi = hi if hi is not None else len(a)  # hi defaults to len(a)   
+    hi = hi if hi is not None else len(a)  # hi defaults to len(a)
     pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
-    return (pos if pos != hi and a[pos] == x else -1) 
+    return (pos if pos != hi and a[pos] == x else -1)
 #--------------------------------------------------------------------------------------------------------------------------------------
 
 parser = argparse.ArgumentParser(description='MSIprofiler serves to detect microsatellite instability from sequencing data. Type MSIprofiler.py --help for further instructions.')
@@ -184,27 +186,28 @@ def unphased(sites,bam_path):
     dict_out = {}; visited_reads = []
     for site in sites:
         start = int(site[1]); end = int(site[2])+1; chr=site[0]; ru=int(site[4])
-        reads = [read for read in bamfile.fetch(str(chr), start,start+1,multiple_iterators=True)] 
-        reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality] 
+        reads = [read for read in bamfile.fetch(str(chr), start,start+1,multiple_iterators=True)]
+        reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality]
         if  len(reads) > args.min_coverage:
             for read in reads:
                 start_read = read.reference_start; end_read = read.reference_end
                 read_sequence = read.seq
-                reps = find_repeats_target(read_sequence,args.flank_size,ru)
-                if len(reps) > 0: 
+                reps = utils.find_repeats_target(read_sequence,
+                                               args.flank_size,ru)
+                if len(reps) > 0:
                     aligned_pos = read.get_reference_positions(full_length=True)
                     try:
-                        idx = aligned_pos.index(start) 
+                        idx = aligned_pos.index(start)
                     except:
                         continue
                     for microsatellite in reps:
                         ru = microsatellite[0]; rs = microsatellite[1]; re = microsatellite[2]
                         if start != start_read + rs + 1:# do not consider if there are ins/del upstream of the repeat
-                            continue 
+                            continue
                         difference = re - rs + 1
                         # get flinking sequence from reference
                         flank_left_ref = fastas[chr].fetch("chr"+chr,start_read+rs-args.flank_size, start_read+rs).upper()
-                        flank_right_ref = fastas[chr].fetch("chr"+chr,int(site[2])-1,int(site[2])-1 +args.flank_size).upper() 
+                        flank_right_ref = fastas[chr].fetch("chr"+chr,int(site[2])-1,int(site[2])-1 +args.flank_size).upper()
                         # get flinking sequence from the reads
                         posfl = (start_read+rs-args.flank_size)
                         if posfl >= start_read:
@@ -216,8 +219,8 @@ def unphased(sites,bam_path):
                             flank_right = read_sequence[re:re+args.flank_size]; mismatches_right = sum(a!=b for a, b in zip(flank_right,flank_right_ref))
                         else:
                             flank_right = ""; mismatches_right=10000
-                        mismatches = mismatches_left + mismatches_right 
-                        if mismatches <= args.tolerated_mismatches: 
+                        mismatches = mismatches_left + mismatches_right
+                        if mismatches <= args.tolerated_mismatches:
                             key_now = site[0] + "\t"+site[1]+"\t"+site[2]+"\t"+site[3]+"\t"+site[4]+"\t"+site[5]+"\t"+site[6]
                             if dict_out.has_key(key_now):
                                 dict_out[key_now] = np.append(dict_out[key_now], difference)
@@ -233,18 +236,18 @@ def phased(sites,bam_path,index):
     for site in sites:
         start = int(site[1]);  end = int(site[2]);  chr=str(site[0]); base1 = site[3]; base2=site[4]; bases = [site[3], site[4] ]
         reads = [read for read in bamfile.fetch(chr, start,end ,multiple_iterators=True)] ## keep this as is, do not put conditions inside here
-        reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality] 
+        reads = [read for read in reads if read.is_proper_pair and read.is_duplicate == False and read.mapping_quality >= args.mapping_quality]
         if  len(reads) > args.min_coverage:
             for read in reads:
                 read_sequence = read.seq
                 #read_sequence = read.query_alignment_sequence
                 reps = find_repeats(read_sequence,args.flank_size)
-                if len(reps) > 0: 
+                if len(reps) > 0:
                     # get the SNP allele in this read
                     start_read = read.reference_start; end_read = read.reference_end
                     aligned_pos = read.get_reference_positions(full_length=True) #True) reports none for soft-clipped positions
                     try:
-                        idx = aligned_pos.index(start) 
+                        idx = aligned_pos.index(start)
                     except:
                         continue
                     snp_read = read_sequence[idx]
@@ -273,11 +276,11 @@ def phased(sites,bam_path,index):
                             flank_right = read_sequence[re+1:re+1+args.flank_size]; mismatches_right = sum(a!=b for a, b in zip(flank_right,flank_right_ref))
                         else:
                             flank_right = ""; mismatches_right = 10000
-                        mismatches = mismatches_left + mismatches_right 
+                        mismatches = mismatches_left + mismatches_right
                         #print microsatellite,difference, site,snp_read,read_sequence[idx-2:idx+2],read_sequence[idx-10:idx+10], diff_ref,flank_right, flank_right_ref, "     ", flank_left, flank_left_ref,"  ",ini,start_read+rs,"\n\n"
                         #print read,"\n\n"
                             #print microsatellite,flank_right, flank_right_ref,flank_right_ref, "     ", flank_left, flank_left_ref,flank_left_ref,"  ",ini,start_read+rs,"\n\n"
-                        if mismatches <= args.tolerated_mismatches: 
+                        if mismatches <= args.tolerated_mismatches:
                             key_now = site[0] + "\t"+str(ini)+"\t"+ refset_now[3] + "\t"+ refset_now[4] + "\t"+ refset_now[5] + "\t"+ refset_now[6]+"\t"+snp_read+"\t"+str(site[1])
                             if dict_out.has_key(key_now):
                                 dict_out[key_now] = np.append(dict_out[key_now], difference)
@@ -299,9 +302,9 @@ if args.mode in ['phased']:
 
     def log_result(result):
         read_lengths_tumor.append(result)
-    
+
     if args.nprocs == None or args.nprocs == 0:
-        args.nprocs = mp.cpu_count() 
+        args.nprocs = mp.cpu_count()
     if args.nprocs == 1:
         read_lengths_tumor = phased(sites,args.tumor_bam,1)
     else:
@@ -316,7 +319,7 @@ if args.mode in ['phased']:
         pool.close()
         pool.join()
 
-        
+
     #------------------------------------------------------
     print "PHASED: tumor/case bam file processed correctly..\n"
     #------------------------------------------------------
@@ -326,10 +329,10 @@ if args.mode in ['phased']:
     #------------------------------------------------------
     def log_result(result):
         read_lengths_normal.append(result)
-    
+
     if args.nprocs == None:
-        args.nprocs = mp.cpu_count() 
-    
+        args.nprocs = mp.cpu_count()
+
     if args.nprocs == 1:
         read_lengths_normal = phased(sites,args.normal_bam,1)
     else:
@@ -342,7 +345,7 @@ if args.mode in ['phased']:
                 pool.apply_async(phased, args = (sites[index*chunk_size:len(sites)], args.normal_bam,index,), callback = log_result)
         pool.close()
         pool.join()
-    
+
     #------------------------------------------------------
     print "Normal bam file processed correctly..\n"
     #------------------------------------------------------
@@ -373,7 +376,7 @@ if args.mode in ['phased']:
     f.close()
 
     print "Phased microsatellites writen to: "+args.output_prefix+'_phased.txt'
-    
+
     #------------------------------------------------------
     print "Calculation of the phased microsatellites finished successfully.."
     #------------------------------------------------------
@@ -390,12 +393,12 @@ if args.mode in ['unphased']:
         read_lengths_tumor_unphased.append(result)
     pool = mp.Pool(args.nprocs)
     chunk_size= int( len(refset)/args.nprocs )
-    
+
     if args.nprocs == 0:
         print "The value of the argument nprocs needs to be at least 1\n\n"
         raise
     if args.nprocs == None:
-        args.nprocs = mp.cpu_count() 
+        args.nprocs = mp.cpu_count()
     if args.nprocs == 1:
         read_lengths_tumor_unphased = unphased(refset,args.tumor_bam)
     else:
@@ -406,7 +409,7 @@ if args.mode in ['unphased']:
                 pool.apply_async(unphased, args = (refset[index*chunk_size:len(refset)], args.tumor_bam,), callback = log_result)
         pool.close()
         pool.join()
-    
+
     #------------------------------------------------------
     print "UNPHASED: tumor bam file processed correctly..\n"
     #------------------------------------------------------
@@ -417,7 +420,7 @@ if args.mode in ['unphased']:
     def log_result(result):
         read_lengths_normal_unphased.append(result)
     pool = mp.Pool(args.nprocs)
-    
+
     if args.nprocs == 1:
         read_lengths_normal_unphased = unphased(refset,args.normal_bam)
     else:
@@ -442,11 +445,11 @@ if args.mode in ['unphased']:
         all_normal = read_lengths_normal_unphased
         all_tumor = read_lengths_tumor_unphased
 
-    keys_normal =  set(all_normal)
-    keys_tumor =  set(all_tumor)
+    keys_normal = set(all_normal)
+    keys_tumor = set(all_tumor)
     common_keys= keys_tumor.intersection(keys_normal)
     counter = 0
-        
+
     for name in common_keys:
         nor = all_normal[name]
         canc = all_tumor[name]
