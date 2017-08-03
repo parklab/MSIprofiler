@@ -1,4 +1,4 @@
-# MSIprofiler [![Build Status](https://travis-ci.com/parklab/MSIprofiler.svg?token=EkzyvwdZ2jcY78ErmS88&branch=master)](https://travis-ci.com/parklab/MSIprofiler)
+# MSIprofiler [![Build Status](https://travis-ci.com/parklab/MSIprofiler.svg?token=EkzyvwdZ2jcY78ErmS88&branch=master)](https://travis-ci.com/parklab/MSIprofiler) [![codecov](https://codecov.io/gh/parklab/MSIprofiler/branch/master/graph/badge.svg?token=PMpspJNu0Z)](https://codecov.io/gh/parklab/MSIprofiler)
 
 MSIprofiler is a tool to detect microsatellite instability (MSI) from sequencing data.
 Its functionalities include:
