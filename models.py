@@ -25,6 +25,9 @@ class MicroSatelliteProfiler:
     CHROMOSOMES_ERROR_MESSAGE = (
         "Valid chromosomes are: {}".format(CHROMOSOMES)
     )
+    FASTA_DIRECTORY_ERROR_MESSAGE = (
+        "Fasta directory correspoding to the reference genome does not exist."
+    )
     NORMAL_BAM_ERROR_MESSAGE = "Normal bam file does not exist."
     NUMBER_OF_PROCESSORS_ERROR_MESSAGE = (
         "The value of the argument `nprocs` needs to be at least 1"
@@ -119,10 +122,7 @@ class MicroSatelliteProfiler:
 
     def _check_fasta_filename(self):
         if not path.exists(self.fasta_directory):
-            raise RuntimeError(
-                "Fasta directory correspoding to the reference "
-                "genome does not exist. Exiting.."
-            )
+            raise RuntimeError(self.FASTA_DIRECTORY_ERROR_MESSAGE)
 
     def _check_mode(self):
         if self.mode not in self.VALID_MODES:

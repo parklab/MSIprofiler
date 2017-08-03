@@ -370,7 +370,7 @@ class MSIProfilerTests(unittest.TestCase):
             )
         self.assertEqual(
             context.exception.message,
-            MicroSatelliteProfiler.CHROMOSOMES_ERROR_MESSAGE
+            MicroSatelliteProfiler.FASTA_DIRECTORY_ERROR_MESSAGE
         )
 
     def test_bad_mode_raises_proper_exceptions(self):
