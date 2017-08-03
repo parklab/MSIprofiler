@@ -9,18 +9,40 @@ from scipy import stats
 
 import utils
 
+
 class MicroSatelliteProfiler:
     """
     Class that aids in the detection of microsatellite instability (MSI) from
     sequencing data
     """
+    BED_FILE_ERROR_MESSAGE = (
+        "Bed file containing heterozygous SNPs does not exist."
+    )
+    VALID_REPEAT_UNITS = [1, 2, 3, 4, 5, 6]
+
     CHROMOSOMES = [str(i) for i in range(1, 23)]
     CHROMOSOMES.extend(["X", "Y"])
+    CHROMOSOMES_ERROR_MESSAGE = (
+        "Valid chromosomes are: {}".format(CHROMOSOMES)
+    )
     NORMAL_BAM_ERROR_MESSAGE = "Normal bam file does not exist."
+    NUMBER_OF_PROCESSORS_ERROR_MESSAGE = (
+        "The value of the argument `nprocs` needs to be at least 1"
+    )
     PHASED = "phased"
+    REFERENCE_SET_ERROR_MESSAGE = "Reference set file does not exist."
+    REPEAT_UNITS_ERROR_MESSAGE = (
+        "Valid repeat_units are {} or any "
+        "combination thereof".format(VALID_REPEAT_UNITS)
+    )
     TUMOR_BAM_ERROR_MESSAGE = "Tumor/case bam file does not exist."
     UNPHASED = "unphased"
-    VALID_REPEAT_UNITS = [1, 2, 3, 4, 5, 6]
+    VALID_MODES = [PHASED, UNPHASED]
+    VALID_MODES_ERROR_MESSAGE = (
+        'The mode argument needs to be one of the following: {}.'.format(
+            VALID_MODES
+        )
+    )
 
     def __init__(self, arguments):
         """
@@ -53,10 +75,10 @@ class MicroSatelliteProfiler:
         self.read_lengths_normal_unphased = []
         self.read_lengths_tumor_unphased = []
 
+        self.validate_arguments()
+
         self.set_fasta_dict()
         self.populate_reference_sets()
-
-        self.validate_arguments()
 
         if self.is_phased:
             with open(self.bed_filename) as bed:
@@ -87,13 +109,13 @@ class MicroSatelliteProfiler:
     def _check_bed_filename(self):
         if not path.exists(self.bed_filename) and self.mode == self.PHASED:
             raise RuntimeError(
-                "Bed file containing heterozygous SNPs does not exist."
+                self.BED_FILE_ERROR_MESSAGE
             )
 
     def _check_chromosomes(self):
         for chromosome in self.chromosomes:
             if chromosome not in self.CHROMOSOMES:
-                raise "Valid chromosomes are: {}".format(self.CHROMOSOMES)
+                raise RuntimeError(self.CHROMOSOMES_ERROR_MESSAGE)
 
     def _check_fasta_filename(self):
         if not path.exists(self.fasta_directory):
@@ -103,10 +125,9 @@ class MicroSatelliteProfiler:
             )
 
     def _check_mode(self):
-        if self.mode not in [self.PHASED, self.UNPHASED]:
+        if self.mode not in self.VALID_MODES:
             raise RuntimeError(
-                'The mode argument needs to be one of the following: '
-                '{}.'.format([self.PHASED, self.UNPHASED])
+                self.VALID_MODES_ERROR_MESSAGE
             )
 
     def _check_processors(self):
@@ -114,21 +135,16 @@ class MicroSatelliteProfiler:
             self.number_of_processors = mp.cpu_count()
 
         if self.number_of_processors == 0:
-            raise RuntimeError(
-                "The value of the argument `nprocs` needs to be at least 1"
-            )
+            raise RuntimeError(self.NUMBER_OF_PROCESSORS_ERROR_MESSAGE)
 
     def _check_reference_set(self):
         if not path.exists(self.reference_set) and self.mode == self.UNPHASED:
-            raise RuntimeError("Reference set file does not exist.")
+            raise RuntimeError(self.REFERENCE_SET_ERROR_MESSAGE)
 
     def _check_repeat_units(self):
         for repeat_unit in self.repeat_units:
             if repeat_unit not in self.VALID_REPEAT_UNITS:
-                raise RuntimeError(
-                    "Valid repeat_units are {} or any "
-                    "combination thereof".format(self.VALID_REPEAT_UNITS)
-                )
+                raise RuntimeError(self.REPEAT_UNITS_ERROR_MESSAGE)
 
     def _conclude_run(self):
         if self.number_of_processors > 1:

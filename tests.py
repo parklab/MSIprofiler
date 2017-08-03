@@ -10,9 +10,13 @@ from models import MicroSatelliteProfiler
 
 
 class MSIProfilerTests(unittest.TestCase):
+    BAD_PATH = "This path doesn't exist"
+    CHROMOSOME = 22
     TEST_DIR = "test-data"
     TUMOR_BAM_PATH = TEST_DIR
     NORMAL_BAM_PATH = TEST_DIR
+    BEDFILE_PATH = TEST_DIR
+    FASTA_PATH = TEST_DIR
     GOOD_PHASED = "{}/good_phased.txt".format(TEST_DIR)
     GOOD_UNPHASED = "{}/good_unphased.txt".format(TEST_DIR)
     GOOD_PHASED_MULTICORE = "{}/good_phased_multi.txt".format(TEST_DIR)
@@ -20,26 +24,26 @@ class MSIProfilerTests(unittest.TestCase):
     OUTPUT_PREFIX = "{}_test".format(str(uuid.uuid4()))
     OUTPUT_PREFIX_MULTICORE = OUTPUT_PREFIX + "_multicore"
     MULTI_PROC = 2
+    REF_SET_PATH = TEST_DIR
     SINGLE_PROC = 1
 
     def setUp(self):
         self.mode = MicroSatelliteProfiler.PHASED
 
         self.TEST_ARGS = [
-            "python",
             "msi_profiler.py",
             "--tumor_bam",
             "{}/test_tumor.bam".format(self.TUMOR_BAM_PATH),
             "--normal_bam",
             "{}/test_normal.bam".format(self.NORMAL_BAM_PATH),
             "--bed",
-            "{}/germline_calls_22_sel1k.bed".format(self.TEST_DIR),
+            "{}/germline_calls_22_sel1k.bed".format(self.BEDFILE_PATH),
             "--chromosomes",
-            "22",
+            "{}".format(self.CHROMOSOME),
             "--fasta",
-            "{}/chrs_fa/".format(self.TEST_DIR),
+            "{}/chrs_fa/".format(self.FASTA_PATH),
             "--reference_set",
-            "{}/reference_set_22_sorted_test.txt".format(self.TEST_DIR),
+            "{}/reference_set_22_sorted_test.txt".format(self.REF_SET_PATH),
             "--min_coverage",
             "5",
             "--min_MS_length",
@@ -61,7 +65,6 @@ class MSIProfilerTests(unittest.TestCase):
             os.remove(file_path)
 
     def create_micro_satellite_profiler_args(self):
-        self.TEST_ARGS.pop(0)
         sys.argv = []
         sys.argv.extend(self.TEST_ARGS)
         parser = msi_profiler.initialize_parser()
@@ -81,7 +84,6 @@ class MSIProfilerTests(unittest.TestCase):
                 "{}".format(output_prefix),
             ]
         )
-        self.TEST_ARGS.pop(0)
         self.TEST_ARGS.pop(0)
         sys.argv.extend(self.TEST_ARGS)
         msi_profiler.main()
@@ -124,6 +126,45 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertTrue(check_chromosomes_mock.called)
         self.assertTrue(check_repeat_units_mock.called)
         self.assertTrue(check_processors_mock.called)
+
+    def test_chromosomes_constant_is_accurate(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        msp = MicroSatelliteProfiler(
+            self.create_micro_satellite_profiler_args()
+        )
+        self.assertEqual(
+            msp.CHROMOSOMES,
+            ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12',
+             '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X',
+             'Y']
+        )
+
+    def test_valid_repeat_units_constant_is_accurate(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        msp = MicroSatelliteProfiler(
+            self.create_micro_satellite_profiler_args()
+        )
+        self.assertEqual(msp.VALID_REPEAT_UNITS, [1, 2, 3, 4, 5, 6])
 
     def test_phased(self):
         self.mode = MicroSatelliteProfiler.PHASED
@@ -218,7 +259,7 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertFalse(msp.is_phased)
 
     def test_bad_tumor_bam_path_raises_proper_exceptions(self):
-        self.TUMOR_BAM_PATH = "This path doesn't exit"
+        self.TUMOR_BAM_PATH = self.BAD_PATH
         self.setUp()
         self.TEST_ARGS.extend(
             [
@@ -241,7 +282,7 @@ class MSIProfilerTests(unittest.TestCase):
         )
 
     def test_bad_normal_bam_path_raises_proper_exceptions(self):
-        self.NORMAL_BAM_PATH = "This path doesn't exit"
+        self.NORMAL_BAM_PATH = self.BAD_PATH
         self.setUp()
         self.TEST_ARGS.extend(
             [
@@ -261,6 +302,165 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertEqual(
             context.exception.message,
             MicroSatelliteProfiler.NORMAL_BAM_ERROR_MESSAGE
+        )
+
+    def test_bad_bedfile_path_raises_proper_exceptions(self):
+        self.BEDFILE_PATH = self.BAD_PATH
+        self.setUp()
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            MicroSatelliteProfiler(
+                self.create_micro_satellite_profiler_args()
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.BED_FILE_ERROR_MESSAGE
+        )
+
+    def test_bad_chromosomes_raises_proper_exceptions(self):
+        self.CHROMOSOME = "Coffee is not a chromosome"
+        self.setUp()
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            MicroSatelliteProfiler(
+                self.create_micro_satellite_profiler_args()
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.CHROMOSOMES_ERROR_MESSAGE
+        )
+
+    def test_bad_fasta_path_raises_proper_exceptions(self):
+        self.FASTA_PATH = self.BAD_PATH
+        self.setUp()
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            MicroSatelliteProfiler(
+                self.create_micro_satellite_profiler_args()
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.CHROMOSOMES_ERROR_MESSAGE
+        )
+
+    def test_bad_mode_raises_proper_exceptions(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            args = self.create_micro_satellite_profiler_args()
+            args.mode = "Not a valid mode"
+            MicroSatelliteProfiler(args)
+
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.VALID_MODES_ERROR_MESSAGE
+        )
+
+    def test_bad_number_of_processors_raises_proper_exceptions(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            args = self.create_micro_satellite_profiler_args()
+            args.nprocs = 0
+            MicroSatelliteProfiler(args)
+
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.NUMBER_OF_PROCESSORS_ERROR_MESSAGE
+        )
+
+    def test_bad_reference_set_path_raises_proper_exceptions(self):
+        self.REF_SET_PATH = self.BAD_PATH
+        self.setUp()
+        self.mode = MicroSatelliteProfiler.UNPHASED
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            MicroSatelliteProfiler(
+                self.create_micro_satellite_profiler_args()
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.REFERENCE_SET_ERROR_MESSAGE
+        )
+
+    def test_bad_repeat_units_raises_proper_exceptions(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            args = self.create_micro_satellite_profiler_args()
+            args.rus = [1, 2, 3, 4, 5, 6, 7]
+            MicroSatelliteProfiler(args)
+
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.REPEAT_UNITS_ERROR_MESSAGE
         )
 
 
