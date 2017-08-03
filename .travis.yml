@@ -8,3 +8,6 @@ script:
   - coverage run tests.py
 after_success:
   - codecov --token=$CODECOV_TOKEN
+notifications:
+  email: isidrolauscher@gmail.com
+  on_success: never
