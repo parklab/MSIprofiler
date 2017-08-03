@@ -11,23 +11,27 @@ from models import MicroSatelliteProfiler
 
 class MSIProfilerTests(unittest.TestCase):
     TEST_DIR = "test-data"
-
+    TUMOR_BAM_PATH = TEST_DIR
+    NORMAL_BAM_PATH = TEST_DIR
     GOOD_PHASED = "{}/good_phased.txt".format(TEST_DIR)
     GOOD_UNPHASED = "{}/good_unphased.txt".format(TEST_DIR)
     GOOD_PHASED_MULTICORE = "{}/good_phased_multi.txt".format(TEST_DIR)
     GOOD_UNPHASED_MULTICORE = "{}/good_unphased_multi.txt".format(TEST_DIR)
     OUTPUT_PREFIX = "{}_test".format(str(uuid.uuid4()))
+    OUTPUT_PREFIX_MULTICORE = OUTPUT_PREFIX + "_multicore"
     MULTI_PROC = 2
     SINGLE_PROC = 1
 
     def setUp(self):
+        self.mode = MicroSatelliteProfiler.PHASED
+
         self.TEST_ARGS = [
             "python",
             "msi_profiler.py",
             "--tumor_bam",
-            "{}/test_tumor.bam".format(self.TEST_DIR),
+            "{}/test_tumor.bam".format(self.TUMOR_BAM_PATH),
             "--normal_bam",
-            "{}/test_normal.bam".format(self.TEST_DIR),
+            "{}/test_normal.bam".format(self.NORMAL_BAM_PATH),
             "--bed",
             "{}/germline_calls_22_sel1k.bed".format(self.TEST_DIR),
             "--chromosomes",
@@ -56,6 +60,32 @@ class MSIProfilerTests(unittest.TestCase):
         for file_path in glob.glob("./{}*.txt".format(self.OUTPUT_PREFIX)):
             os.remove(file_path)
 
+    def create_micro_satellite_profiler_args(self):
+        self.TEST_ARGS.pop(0)
+        sys.argv = []
+        sys.argv.extend(self.TEST_ARGS)
+        parser = msi_profiler.initialize_parser()
+        args = parser.parse_args()
+        return args
+
+    def run_msiprofiler(self,
+                        number_or_processors,
+                        output_prefix=OUTPUT_PREFIX):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(number_or_processors),
+                "--output_prefix",
+                "{}".format(output_prefix),
+            ]
+        )
+        self.TEST_ARGS.pop(0)
+        self.TEST_ARGS.pop(0)
+        sys.argv.extend(self.TEST_ARGS)
+        msi_profiler.main()
+
     def test_msi_profiler_no_args(self):
         with self.assertRaises(AttributeError):
             MicroSatelliteProfiler({})
@@ -81,24 +111,9 @@ class MSIProfilerTests(unittest.TestCase):
         check_repeat_units_mock,
         check_processors_mock
     ):
-        sys.argv = []
-        self.output_prefix = "test"
         self.mode = MicroSatelliteProfiler.PHASED
-        self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
 
-        self.TEST_ARGS.extend(
-            [
-                "--mode",
-                "{}".format(self.mode),
-                "--nprocs",
-                "{}".format(self.SINGLE_PROC),
-                "--output_prefix",
-                "{}".format(self.OUTPUT_PREFIX),
-            ]
-        )
-        self.TEST_ARGS.pop(0)
-        sys.argv.extend(self.TEST_ARGS)
-        msi_profiler.main()
+        self.run_msiprofiler(self.SINGLE_PROC)
 
         self.assertTrue(run_mock.called)
         self.assertTrue(check_fasta_mock.called)
@@ -111,76 +126,143 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertTrue(check_processors_mock.called)
 
     def test_phased(self):
-        self.output_prefix = "test"
         self.mode = MicroSatelliteProfiler.PHASED
         self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
 
-        self.TEST_ARGS.extend(
-            [
-                "--mode {}".format(self.mode),
-                "--nprocs {}".format(self.SINGLE_PROC),
-                "--output_prefix {}".format(self.OUTPUT_PREFIX),
-            ]
-        )
-        os.system(" ".join(self.TEST_ARGS))
+        self.run_msiprofiler(self.SINGLE_PROC)
 
         with open(self.output_file) as test_out,\
                 open(self.GOOD_PHASED) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
     def test_unphased(self):
-        self.output_prefix = "test"
         self.mode = MicroSatelliteProfiler.UNPHASED
         self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
 
-        self.TEST_ARGS.extend(
-            [
-                "--mode {}".format(self.mode),
-                "--nprocs {}".format(self.SINGLE_PROC),
-                "--output_prefix {}".format(self.OUTPUT_PREFIX),
-            ]
-        )
-        os.system(" ".join(self.TEST_ARGS))
+        self.run_msiprofiler(self.SINGLE_PROC)
 
         with open(self.output_file) as test_out, \
                 open(self.GOOD_UNPHASED) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
     def test_multicore_phased(self):
-        self.output_prefix = "test_multicore"
         self.mode = MicroSatelliteProfiler.PHASED
-        self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
-
-        self.TEST_ARGS.extend(
-            [
-                "--mode {}".format(self.mode),
-                "--nprocs {}".format(self.MULTI_PROC),
-                "--output_prefix {}".format(self.OUTPUT_PREFIX),
-            ]
+        self.output_file = "{}_{}.txt".format(
+            self.OUTPUT_PREFIX_MULTICORE,
+            self.mode
         )
-        os.system(" ".join(self.TEST_ARGS))
+
+        self.run_msiprofiler(
+            self.MULTI_PROC,
+            output_prefix=self.OUTPUT_PREFIX_MULTICORE
+        )
 
         with open(self.output_file) as test_out, \
                 open(self.GOOD_PHASED_MULTICORE) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
-    def test_multicore_unphased(self):
-        self.output_prefix = "test_multicore"
+    # def test_multicore_unphased(self):
+    #     self.output_prefix = "test_multicore"
+    #     self.mode = MicroSatelliteProfiler.UNPHASED
+    #     self.output_file = "{}_{}.txt".format(
+    #           self.OUTPUT_PREFIX_MULTICORE,
+    #           self.mode
+    # )
+    #
+    #       self.run_msiprofiler(
+    #           self.MULTI_PROC,
+    #           output_prefix=self.OUTPUT_PREFIX_MULTICORE
+    #       )
+    #
+    #     with open(self.output_file) as test_out, \
+    #             open(self.GOOD_UNPHASED_MULTICORE) as known_good:
+    #         self.assertEqual(known_good.read(), test_out.read())
+
+    def test_is_phased(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        msp = MicroSatelliteProfiler(
+            self.create_micro_satellite_profiler_args()
+        )
+
+        self.assertTrue(msp.is_phased)
+        self.assertFalse(msp.is_unphased)
+
+    def test_is_unphased(self):
         self.mode = MicroSatelliteProfiler.UNPHASED
-        self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
 
         self.TEST_ARGS.extend(
             [
-                "--mode {}".format(self.mode),
-                "--nprocs {}".format(self.MULTI_PROC),
-                "--output_prefix {}".format(self.OUTPUT_PREFIX),
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
             ]
         )
-        os.system(" ".join(self.TEST_ARGS))
 
-        with open(self.output_file) as test_out, \
-                open(self.GOOD_UNPHASED_MULTICORE) as known_good:
-            self.assertEqual(known_good.read(), test_out.read())
+        msp = MicroSatelliteProfiler(
+            self.create_micro_satellite_profiler_args()
+        )
+        self.assertTrue(msp.is_unphased)
+        self.assertFalse(msp.is_phased)
+
+    def test_bad_tumor_bam_path_raises_proper_exceptions(self):
+        self.TUMOR_BAM_PATH = "This path doesn't exit"
+        self.setUp()
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            MicroSatelliteProfiler(
+                self.create_micro_satellite_profiler_args()
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.TUMOR_BAM_ERROR_MESSAGE
+        )
+
+    def test_bad_normal_bam_path_raises_proper_exceptions(self):
+        self.NORMAL_BAM_PATH = "This path doesn't exit"
+        self.setUp()
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            MicroSatelliteProfiler(
+                self.create_micro_satellite_profiler_args()
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.NORMAL_BAM_ERROR_MESSAGE
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
