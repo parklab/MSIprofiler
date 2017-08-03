@@ -6,10 +6,9 @@ import unittest
 import uuid
 
 import msi_profiler
+import scripts.get_reference_set_from_fasta
 import utils
 from models import MicroSatelliteProfiler
-from scripts import get_reference_set_from_fasta
-from scripts.get_reference_set_from_fasta import fetch_reference_sets
 
 
 class MSIProfilerTests(unittest.TestCase):
@@ -468,17 +467,15 @@ class MSIProfilerTests(unittest.TestCase):
 
 
 class GetReferenceSetTestCase(unittest.TestCase):
-    TEST_DIR = "test-data"
-
-    @mock.patch.object(get_reference_set_from_fasta,
+    @mock.patch.object(scripts.get_reference_set_from_fasta,
                        "write_reference_set_file")
-    @mock.patch.object(get_reference_set_from_fasta, "load_fasta_file")
+    @mock.patch.object(scripts.get_reference_set_from_fasta, "load_fasta_file")
     @mock.patch.object(utils, "find_repeats")
     def test_proper_methods_are_called(self,
                                        find_repeats_mock,
                                        load_fasta_mock,
                                        write_reference_set_mock):
-        fetch_reference_sets()
+        scripts.get_reference_set_from_fasta.fetch_reference_sets()
         self.assertTrue(find_repeats_mock.called)
         self.assertTrue(load_fasta_mock.called)
         self.assertTrue(write_reference_set_mock.called)

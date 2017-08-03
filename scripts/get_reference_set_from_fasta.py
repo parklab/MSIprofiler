@@ -3,9 +3,6 @@ import sys
 #add option for notation: ensemble (1,2,3) o ucsc (chr1, chr2,..)
 import utils
 
-chr = sys.argv[1]
-fi = "chrs_fa/chr"+str(chr)+".fa"
-
 
 def fetch_reference_sets():
     #load fasta file:
@@ -49,4 +46,7 @@ def write_reference_set_file(o, sequence):
                 f.write(cmd + "\n")
 
 if __name__ == '__main__':
+    chr = sys.argv[1]
+    fi = "chrs_fa/chr" + str(chr) + ".fa"
+
     fetch_reference_sets()
