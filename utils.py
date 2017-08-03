@@ -17,7 +17,8 @@ def binary_search(a, x, lo=0, hi=None):  # can't use a to specify default for hi
     pos = bisect.bisect_left(a, x, lo, hi)  # find insertion position
     return (pos if pos != hi and a[pos] == x else -1)
 
-def find_repeats(seq, flank_size, repeat_units):
+
+def find_repeats(seq, flank_size, repeat_units, min_score=MIN_SCORE):
     bases=len(seq)
     flank_size = flank_size-1
     # save output as a list of lists
@@ -64,7 +65,7 @@ def find_repeats(seq, flank_size, repeat_units):
                 #debugging
             #print "RU current_pos  pos_in_motif  test_pos   bases, score"
                 #print ru, current_pos, pos_in_motif, test_pos, bases,score,"\n" #, current_pos + pos_in_motif, bases
-            if max_observed_score >= MIN_SCORE:# and test_pos <= bases-flank_size:
+            if max_observed_score >= min_score:# and test_pos <= bases-flank_size:
                 mm = scores.index(max(scores))
                 mm = mm +ru
                 if base+mm < (bases-flank_size): # repeat not overlapping flanking region

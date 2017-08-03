@@ -6,7 +6,10 @@ import unittest
 import uuid
 
 import msi_profiler
+import utils
 from models import MicroSatelliteProfiler
+from scripts import get_reference_set_from_fasta
+from scripts.get_reference_set_from_fasta import fetch_reference_sets
 
 
 class MSIProfilerTests(unittest.TestCase):
@@ -102,16 +105,16 @@ class MSIProfilerTests(unittest.TestCase):
     @mock.patch.object(MicroSatelliteProfiler, "_check_fasta_filename")
     @mock.patch.object(MicroSatelliteProfiler, "run")
     def test_proper_arg_validations_are_called(
-        self,
-        run_mock,
-        check_fasta_mock,
-        check_bed_mock,
-        check_reference_mock,
-        check_bams_mock,
-        check_mode_mock,
-        check_chromosomes_mock,
-        check_repeat_units_mock,
-        check_processors_mock
+            self,
+            run_mock,
+            check_fasta_mock,
+            check_bed_mock,
+            check_reference_mock,
+            check_bams_mock,
+            check_mode_mock,
+            check_chromosomes_mock,
+            check_repeat_units_mock,
+            check_processors_mock
     ):
         self.mode = MicroSatelliteProfiler.PHASED
 
@@ -172,7 +175,7 @@ class MSIProfilerTests(unittest.TestCase):
 
         self.run_msiprofiler(self.SINGLE_PROC)
 
-        with open(self.output_file) as test_out,\
+        with open(self.output_file) as test_out, \
                 open(self.GOOD_PHASED) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
@@ -462,6 +465,23 @@ class MSIProfilerTests(unittest.TestCase):
             context.exception.message,
             MicroSatelliteProfiler.REPEAT_UNITS_ERROR_MESSAGE
         )
+
+
+class GetReferenceSetTestCase(unittest.TestCase):
+    TEST_DIR = "test-data"
+
+    @mock.patch.object(get_reference_set_from_fasta,
+                       "write_reference_set_file")
+    @mock.patch.object(get_reference_set_from_fasta, "load_fasta_file")
+    @mock.patch.object(utils, "find_repeats")
+    def test_proper_methods_are_called(self,
+                                       find_repeats_mock,
+                                       load_fasta_mock,
+                                       write_reference_set_mock):
+        fetch_reference_sets()
+        self.assertTrue(find_repeats_mock.called)
+        self.assertTrue(load_fasta_mock.called)
+        self.assertTrue(write_reference_set_mock.called)
 
 
 if __name__ == '__main__':
