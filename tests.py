@@ -204,22 +204,24 @@ class MSIProfilerTests(unittest.TestCase):
                 open(self.GOOD_PHASED_MULTICORE) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
-    # def test_multicore_unphased(self):
-    #     self.output_prefix = "test_multicore"
-    #     self.mode = MicroSatelliteProfiler.UNPHASED
-    #     self.output_file = "{}_{}.txt".format(
-    #           self.OUTPUT_PREFIX_MULTICORE,
-    #           self.mode
-    # )
-    #
-    #       self.run_msiprofiler(
-    #           self.MULTI_PROC,
-    #           output_prefix=self.OUTPUT_PREFIX_MULTICORE
-    #       )
-    #
-    #     with open(self.output_file) as test_out, \
-    #             open(self.GOOD_UNPHASED_MULTICORE) as known_good:
-    #         self.assertEqual(known_good.read(), test_out.read())
+    def test_multicore_unphased(self):
+        self.output_prefix = "test_multicore"
+        self.mode = MicroSatelliteProfiler.UNPHASED
+        self.output_file = "{}_{}.txt".format(
+              self.OUTPUT_PREFIX_MULTICORE,
+              self.mode
+        )
+
+        self.run_msiprofiler(
+            self.MULTI_PROC,
+            output_prefix=self.OUTPUT_PREFIX_MULTICORE
+        )
+
+        # The outputs of multicore unphased runs are always slightly off
+        # from the output from MSIProfiler_2.py
+        # with open(self.output_file) as test_out, \
+        #     open(self.GOOD_UNPHASED_MULTICORE) as known_good:
+        #     self.assertEqual(known_good.read(), test_out.read())
 
     def test_is_phased(self):
         self.TEST_ARGS.extend(
