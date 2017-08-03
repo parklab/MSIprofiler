@@ -2,21 +2,23 @@
 # https://stackoverflow.com/questions/1799527/numpy-show-decimal-values-in-array-results
 from __future__ import division
 import csv
-import os
-
+from os import path
 import multiprocessing as mp
 import numpy as np
-import pysam
 from scipy import stats
 
-from .utils import loadcsv, phased, unphased
-
+import utils
 
 class MicroSatelliteProfiler:
     """
     Class that aids in the detection of microsatellite instability (MSI) from
     sequencing data
     """
+    CHROMOSOMES = [str(i) for i in range(1, 23)]
+    CHROMOSOMES.extend(["X", "Y"])
+    PHASED = "phased"
+    UNPHASED = "unphased"
+    VALID_REPEAT_UNITS = [1, 2, 3, 4, 5, 6]
 
     def __init__(self, arguments):
         """
@@ -24,7 +26,9 @@ class MicroSatelliteProfiler:
         :param arguments: parsed argparse.ArgumentParser() object
         """
         self.bed_filename = arguments.bed
-        self.fasta_filename = arguments.fasta
+        self.chromosomes = np.sort(arguments.chromosomes)
+        self.fasta_dict = {}
+        self.fasta_directory = arguments.fasta
         self.flank_size = arguments.flank_size
         self.mapping_quality = arguments.mapping_quality
         self.max_microsatellite_length = arguments.max_MS_length
@@ -35,10 +39,75 @@ class MicroSatelliteProfiler:
         self.number_of_processors = arguments.nprocs
         self.output_prefix = arguments.output_prefix
         self.reference_set = arguments.reference_set
-        self.repeat_units = set(arguments.repeat_units)
+        self.repeat_units = set(arguments.rus)
         self.tolerated_mismatches = arguments.tolerated_mismatches
         self.tumor_bam = arguments.tumor_bam
+        self.reference_sets = None
+        self.sites = None
+        self.reference_set_dict = {}
+        self.reference_set_ini_end_dict = {}
+        self.read_lengths_normal = []
+        self.read_lengths_tumor = []
+        self.read_lengths_normal_unphased = []
+        self.read_lengths_tumor_unphased = []
 
+        self.set_fasta_dict()
+        self.populate_reference_sets()
+
+        self.validate_arguments()
+
+        if self.is_phased:
+            with open(self.bed_filename) as bed:
+                reader = csv.reader(bed, delimiter="\t")
+                self.sites = list(reader)
+            self.chunk_size = int(len(self.sites) / self.number_of_processors)
+
+        if self.is_unphased:
+            self.chunk_size = int(
+                len(self.reference_sets) / self.number_of_processors
+            )
+
+    @property
+    def is_phased(self):
+        return True if self.mode == self.PHASED else False
+
+    @property
+    def is_unphased(self):
+        return True if self.mode == self.UNPHASED else False
+
+    def _check_bams(self):
+        if not path.exists(self.tumor_bam):
+            raise RuntimeError("Tumor/case bam file does not exist.")
+
+        if not path.exists(self.normal_bam):
+            raise RuntimeError("Normal bam file does not exist.")
+
+    def _check_bed_filename(self):
+        if not path.exists(self.bed_filename) and self.mode == self.PHASED:
+            raise RuntimeError(
+                "Bed file containing heterozygous SNPs does not exist."
+            )
+
+    def _check_chromosomes(self):
+        for chromosome in self.chromosomes:
+            if chromosome not in self.CHROMOSOMES:
+                raise "Valid chromosomes are: {}".format(self.CHROMOSOMES)
+
+    def _check_fasta_filename(self):
+        if not path.exists(self.fasta_directory):
+            raise RuntimeError(
+                "Fasta directory correspoding to the reference "
+                "genome does not exist. Exiting.."
+            )
+
+    def _check_mode(self):
+        if self.mode not in [self.PHASED, self.UNPHASED]:
+            raise RuntimeError(
+                'The mode argument needs to be one of the following: '
+                '{}.'.format([self.PHASED, self.UNPHASED])
+            )
+
+    def _check_processors(self):
         if self.number_of_processors is None:
             self.number_of_processors = mp.cpu_count()
 
@@ -47,339 +116,335 @@ class MicroSatelliteProfiler:
                 "The value of the argument `nprocs` needs to be at least 1"
             )
 
-        self.pool = mp.Pool(self.number_of_processors)
-        self.chunk_size = int(
-            len(self.reference_set) / self.number_of_processors
-        )
-
-        if not all(6 >= i > 0 for i in self.repeat_units):
-            raise RuntimeError(
-                'The repeat units, i.e. ru, '
-                'supported are in the 1-6 range. Exiting..'
-            )
-
-        if self.mode not in ['both', 'phased', 'unphased']:
-            raise RuntimeError(
-                'The mode argument needs to be one of the following: '
-                'both, phased, unphased.'
-            )
-
-        if not os.path.exists(self.tumor_bam):
-            raise RuntimeError("Tumor/case bam file does not exist.")
-
-        if not os.path.exists(self.normal_bam):
-            raise RuntimeError("Normal bam file does not exist.")
-
-        if (not os.path.exists(self.reference_set) and
-                self.mode in ['both', 'unphased']):
+    def _check_reference_set(self):
+        if not path.exists(self.reference_set) and self.mode == self.UNPHASED:
             raise RuntimeError("Reference set file does not exist.")
 
-        if not os.path.exists(self.bed_filename) \
-                and self.mode in ['both', 'phased']:
-            raise RuntimeError(
-                "Bed file containing heterozygous SNPs does not exist."
-            )
+    def _check_repeat_units(self):
+        for repeat_unit in self.repeat_units:
+            if repeat_unit not in self.VALID_REPEAT_UNITS:
+                raise RuntimeError(
+                    "Valid repeat_units are {} or any "
+                    "combination thereof".format(self.VALID_REPEAT_UNITS)
+                )
 
-        if not os.path.exists(self.fasta_filename):
-            raise RuntimeError(
-                "Fasta file correspoding to the reference "
-                "genome does not exist. Exiting.."
-            )
-
-        self.fasta_file = pysam.FastaFile(self.fasta_filename)
-
-        self.reference_set = [
-            x for x in loadcsv(
-                self.reference_set,
-                self.min_microsatellite_length,
-                self.max_microsatellite_length
-            )
-        ]
-        self.reference_set_ini_end = [x[1] for x in self.reference_set]
-
-        with open(self.bed_filename) as bed:
-            reader = csv.reader(bed, delimiter="\t")
-            self.sites = list(reader)
-
-    def run_phased(self):
-        print "PHASED: Extracting MS repeats from tumor bam file..\n"
-
-        # This list will contain the dictionaries
-        # returned by the different processes
-        read_lengths_tumor = []
-
-        def log_result(result):
-            read_lengths_tumor.append(result)
-
-        if self.number_of_processors == 1:
-            read_lengths_tumor = phased(
-                self.tumor_bam,
-                self.fasta_file,
-                self.flank_size,
-                self.mapping_quality,
-                self.min_coverage,
-                self.reference_set,
-                self.reference_set_ini_end,
-                self.repeat_units,
-                self.sites,
-                self.tolerated_mismatches
-            )
-        else:
-            for index in np.arange(0, self.number_of_processors):
-                if index != (self.number_of_processors - 1):
-                    self._run_in_pool(
-                        self.tumor_bam,
-                        log_result,
-                        self.sites[
-                          index * self.chunk_size:(index + 1) * self.chunk_size
-                        ]
-                    )
+    def _conclude_run(self):
+        if self.number_of_processors > 1:
+            all_normal = {}
+            all_tumor = {}
+            for i in range(1, self.number_of_processors):
+                if self.is_phased:
+                    all_normal.update(self.read_lengths_normal[i])
+                    all_tumor.update(self.read_lengths_tumor[i])
                 else:
-                    self._run_in_pool(
-                        self.tumor_bam,
-                        log_result,
-                        self.sites[index * self.chunk_size: len(self.sites)]
-                    )
-            # close the pool
-            self.pool.close()
-            self.pool.join()
-
-        print "PHASED: tumor/case bam file processed correctly..\n"
-        print "PHASED: extracting MS repeats from normal bam file..\n"
-
-        read_lengths_normal = []
-
-        def log_result(result):
-            read_lengths_normal.append(result)
-
-        if self.number_of_processors == 1:
-            read_lengths_normal = phased(
-                self.normal_bam,
-                self.fasta_file,
-                self.flank_size,
-                self.mapping_quality,
-                self.min_coverage,
-                self.reference_set,
-                self.reference_set_ini_end,
-                self.repeat_units,
-                self.sites,
-                self.tolerated_mismatches,
-            )
+                    all_normal.update(self.read_lengths_normal_unphased[i])
+                    all_tumor.update(self.read_lengths_tumor_unphased[i])
         else:
-            for index in np.arange(0, self.number_of_processors):
-                if index != (self.number_of_processors - 1):
-                    self._run_in_pool(
-                        self.normal_bam,
-                        log_result,
-                        self.sites[
-                          index * self.chunk_size:(index + 1) * self.chunk_size
-                        ]
-                    )
-                else:
-                    self._run_in_pool(
-                        self.normal_bam,
-                        log_result,
-                        self.sites[index * self.chunk_size: len(self.sites)],
-                    )
-
-            self.pool.close()
-            self.pool.join()
-
-        print "Normal bam file processed correctly..\n"
-
-        with open(self.output_prefix + '_phased.txt', 'w') as f:
-            if self.number_of_processors == 1:
-                all_normal = read_lengths_normal[0]
-                all_tumor = read_lengths_tumor[0]
+            if self.is_phased:
+                all_normal = self.read_lengths_normal[0]
+                all_tumor = self.read_lengths_tumor[0]
             else:
-                all_normal = read_lengths_normal[0]
-                all_tumor = read_lengths_tumor[0]
+                all_normal = self.read_lengths_normal_unphased[0]
+                all_tumor = self.read_lengths_tumor_unphased[0]
 
-            if self.number_of_processors > 1:
-                for i in range(1, self.number_of_processors):
-                    all_normal.update(read_lengths_normal[i])
-                    all_tumor.update(read_lengths_tumor[i])
+        keys_normal = set(all_normal)
+        keys_tumor = set(all_tumor)
+        common_keys = keys_tumor.intersection(keys_normal)
 
-            keys_normal = set(all_normal)
-            keys_tumor = set(all_tumor)
-            common_keys = keys_tumor.intersection(keys_normal)
+        with open('{}_{}.txt'.format(self.output_prefix, self.mode), 'w') as f:
+            if self.is_phased:
+                self._write_phased_output(
+                    f,
+                    common_keys,
+                    all_normal,
+                    all_tumor
+                )
+            else:
+                self._write_unphased_output(
+                    f,
+                    common_keys,
+                    all_normal,
+                    all_tumor
+                )
 
-            for name in common_keys:
-                nor = all_normal[name]
-                canc = all_tumor[name]
-                if isinstance(nor, int) == False and isinstance(canc,
-                                                                int) == False:
-                    if len(nor) >= self.min_coverage and len(
-                            canc) >= self.min_coverage:
-                        pval = stats.ks_2samp(nor, canc)[1]
-                        f.write(name + "\t" + ",".join(
-                            [str(x) for x in nor]) + "\t" + ",".join(
-                            [str(x) for x in canc]) + "\t" + str(pval) + "\n")
-
-        print "Phased microsatellites writen to: {}_phased.txt".format(
-            self.output_prefix
+        print "{} microsatellites writen to: {}_{}.txt".format(
+            self.mode.title(),
+            self.output_prefix,
+            self.mode
         )
         print (
-            "Calculation of the phased microsatellites finished successfully.."
+            "Calculation of the {} microsatellites finished successfully."
+            .format(self.mode)
         )
 
-    def run_unphased(self):
-        print "Extracting MS repeats (UNPHASED) from tumor bam file..\n"
+    def log_normal_result(self, result):
+        self.read_lengths_normal.append(result)
 
-        read_lengths_tumor_unphased = []
+    def log_tumor_result(self, result):
+        self.read_lengths_tumor.append(result)
 
-        def log_result(result):
-            read_lengths_tumor_unphased.append(result)
+    def log_unphased_normal_result(self, result):
+        self.read_lengths_normal_unphased.append(result)
+
+    def log_unphased_tumor_result(self, result):
+        self.read_lengths_tumor_unphased.append(result)
+
+    def populate_reference_sets(self, refsets=None):
+        for chromosome in self.chromosomes:
+            refsetgen = utils.loadcsv(
+                self.reference_set,
+                self.min_microsatellite_length,
+                self.max_microsatellite_length,
+                self.repeat_units
+            )
+            refsets = [x for x in refsetgen]
+            self.reference_set_dict[chromosome] = refsets
+            # get the index positions
+            refset_ini_end = [x[1] for x in refsets]
+            self.reference_set_ini_end_dict[chromosome] = refset_ini_end
+
+        self.reference_sets = refsets
+
+    def run(self):
+        if self.is_phased:
+            self._run_phased_tumor()
+            self._run_phased_normal()
+
+        if self.is_unphased:
+            self._run_unphased_tumor()
+            self._run_unphased_normal()
+
+        self._conclude_run()
+
+    def _run_phased_tumor(self):
+        print "{}: Extracting MS repeats from tumor bam file..\n".format(
+            self.PHASED.upper()
+        )
 
         if self.number_of_processors == 1:
-            read_lengths_tumor_unphased = unphased(
-                self.tumor_bam,
-                self.fasta_file,
-                self.flank_size,
-                self.mapping_quality,
-                self.min_coverage,
-                self.reference_set,
-                self.tolerated_mismatches
+            self.log_tumor_result(
+                utils.phased(self, self.sites, self.tumor_bam)
             )
         else:
+            pool = mp.Pool(self.number_of_processors)
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
-                    self._run_in_pool(
-                        self.tumor_bam,
-                        log_result,
-                        self.reference_set[
-                            index *
-                            self.chunk_size:(index + 1) *
-                            self.chunk_size
-                        ],
-                        is_phased=False
+                    pool.apply_async(
+                        utils.phased,
+                        args=(
+                            self,
+                            self.sites[
+                                index *
+                                self.chunk_size:(index + 1) *
+                                self.chunk_size
+                            ],
+                            self.tumor_bam,
+                        ),
+                        callback=self.log_tumor_result
                     )
                 else:
-                    self._run_in_pool(
-                        self.tumor_bam,
-                        log_result,
-                        self.reference_set[
-                            index * self.chunk_size:len(self.reference_set)
-                        ],
-                        is_phased=False
+                    pool.apply_async(
+                        utils.phased,
+                        args=(
+                            self,
+                            self.sites[
+                                index *
+                                self.chunk_size: len(self.sites)
+                            ],
+                            self.tumor_bam,
+                        ),
+                        callback=self.log_tumor_result
                     )
+            pool.close()
+            pool.join()
 
-            self.pool.close()
-            self.pool.join()
+        print "{}: tumor/case bam file processed correctly..\n".format(
+            self.PHASED.upper()
+        )
 
-        print "UNPHASED: tumor bam file processed correctly..\n"
-        print "Extracting MS repeats (UNPHASED) from normal bam file..\n"
-
-        read_lengths_normal_unphased = []
-
-        def log_result(result):
-            read_lengths_normal_unphased.append(result)
+    def _run_phased_normal(self):
+        print "{}: extracting MS repeats from normal bam file..\n".format(
+            self.PHASED.upper()
+        )
 
         if self.number_of_processors == 1:
-            read_lengths_normal_unphased = unphased(
-                self.normal_bam,
-                self.fasta_file,
-                self.flank_size,
-                self.mapping_quality,
-                self.min_coverage,
-                self.reference_set,
-                self.tolerated_mismatches
+            self.log_normal_result(
+                utils.phased(self, self.sites, self.normal_bam)
             )
         else:
+            pool = mp.Pool(self.number_of_processors)
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
-                    self._run_in_pool(
-                        self.normal_bam,
-                        log_result,
-                        self.reference_set[
-                            index *
-                            self.chunk_size:(index + 1) *
-                            self.chunk_size
-                        ],
-                        is_phased=False
+                    pool.apply_async(
+                        utils.phased,
+                        args=(
+                            self,
+                            self.sites[
+                                index *
+                                self.chunk_size:(index + 1) *
+                                self.chunk_size
+                            ],
+                            self.normal_bam,
+                        ),
+                        callback=self.log_normal_result
                     )
                 else:
-                    self._run_in_pool(
-                        self.normal_bam,
-                        log_result,
-                        self.reference_set[
-                            index * self.chunk_size:len(self.reference_set)
-                        ],
-                        is_phased=False
+                    pool.apply_async(
+                        utils.phased,
+                        args=(
+                            self,
+                            self.sites[
+                            index *
+                            self.chunk_size: len(self.sites)
+                            ],
+                            self.normal_bam,
+                        ),
+                        callback=self.log_normal_result
                     )
-            self.pool.close()
-            self.pool.join()
+            pool.close()
+            pool.join()
 
-        print "UNPHASED: normal bam file processed correctly..\n"
+        print "{}: Normal bam file processed correctly..\n".format(
+            self.PHASED.upper()
+        )
 
-        with open(self.output_prefix + '_unphased.txt', 'w') as f:
-            all_normal = read_lengths_normal_unphased[0]
-            all_tumor = read_lengths_tumor_unphased[0]
+    def _run_unphased_tumor(self):
+        print "Extracting MS repeats ({}) from tumor bam file..\n".format(
+            self.UNPHASED.upper()
+        )
 
-            if self.number_of_processors > 1:
-                for i in range(1, self.number_of_processors):
-                    all_normal.update(read_lengths_normal_unphased[i])
-                    all_tumor.update(read_lengths_tumor_unphased[i])
-
-            keys_normal = set(all_normal)
-            keys_tumor = set(all_tumor)
-            common_keys = keys_tumor.intersection(keys_normal)
-
-            for name in common_keys:
-                nor = all_normal[name]
-                canc = all_tumor[name]
-                if isinstance(nor, int) == False and isinstance(canc,
-                                                                int) == False:
-                    if (len(nor) >= self.min_coverage and
-                            len(canc) >= self.min_coverage):
-                        pval = stats.ks_2samp(nor, canc)[1]
-                        mo = stats.mode(nor)
-                        percentage = (nor == mo).sum() / len(nor)
-                        confidence = "high" if percentage >= .7 else "low"
-                        f.write(name + "\t" + ",".join(
-                            [str(x) for x in nor]) + "\t" + ",".join(
-                            [str(x) for x in canc]) + "\t" + str(
-                            pval) + "\t" + confidence + "\n")
-
-    def _run_in_pool(self, bam, log_result, sites, is_phased=True):
-        """
-        Helper method to run utilities in the multiprocess Pool
-        :param bam:
-        :param log_result:
-        :param sites:
-        :param is_phased:
-        """
-        if is_phased:
-            self.pool.apply_async(
-                phased,
-                args=(
-                    bam,
-                    self.fasta_file,
-                    self.flank_size,
-                    self.mapping_quality,
-                    self.min_coverage,
-                    self.reference_set,
-                    self.reference_set_ini_end,
-                    self.repeat_units,
-                    sites,
-                    self.tolerated_mismatches
-                ),
-                callback=log_result
+        if self.number_of_processors == 1:
+            self.log_unphased_tumor_result(
+                utils.unphased(self, self.reference_sets,  self.tumor_bam)
             )
         else:
-            self.pool.apply_async(
-                unphased,
-                args=(
-                    bam,
-                    self.fasta_file,
-                    self.flank_size,
-                    self.mapping_quality,
-                    self.min_coverage,
-                    self.reference_set,
-                    self.reference_set_ini_end,
-                    self.repeat_units,
-                    sites,
-                    self.tolerated_mismatches
-                ),
-                callback=log_result
+            pool = mp.Pool(self.number_of_processors)
+            for index in np.arange(0, self.number_of_processors):
+                if index != (self.number_of_processors - 1):
+                    pool.apply_async(
+                        utils.unphased,
+                        args=(
+                            self,
+                            self.reference_sets[
+                                index *
+                                self.chunk_size:(index + 1) *
+                                self.chunk_size
+                            ],
+                            self.tumor_bam,
+                        ),
+                        callback=self.log_unphased_tumor_result
+                    )
+                else:
+                    pool.apply_async(
+                        utils.unphased,
+                        args=(
+                            self,
+                            self.reference_sets[
+                                index *
+                                self.chunk_size: len(self.reference_sets)
+                            ],
+                            self.tumor_bam,
+                        ),
+                        callback=self.log_unphased_tumor_result
+                    )
+            pool.close()
+            pool.join()
+
+        print "{}: tumor bam file processed correctly..\n".format(
+            self.UNPHASED.upper()
+        )
+
+    def _run_unphased_normal(self):
+        print "Extracting MS repeats ({}) from normal bam file..\n".format(
+            self.UNPHASED.upper()
+        )
+
+        if self.number_of_processors == 1:
+            self.log_unphased_normal_result(
+                utils.unphased(self, self.reference_sets, self.normal_bam)
             )
+        else:
+            pool = mp.Pool(self.number_of_processors)
+            for index in np.arange(0, self.number_of_processors):
+                if index != (self.number_of_processors - 1):
+                    pool.apply_async(
+                        utils.unphased,
+                        args=(
+                            self,
+                            self.reference_sets[
+                                index *
+                                self.chunk_size:(index + 1) *
+                                self.chunk_size
+                            ],
+                            self.normal_bam,
+                        ),
+                        callback=self.log_unphased_normal_result
+                    )
+                else:
+                    pool.apply_async(
+                        utils.unphased,
+                        args=(
+                            self,
+                            self.reference_sets[
+                                index *
+                                self.chunk_size: len(self.reference_sets)
+                            ],
+                            self.normal_bam,
+                        ),
+                        callback=self.log_unphased_normal_result
+                    )
+            pool.close()
+            pool.join()
+
+        print "{}: normal bam file processed correctly..\n".format(
+            self.UNPHASED
+        )
+
+    def set_fasta_dict(self):
+        for index in self.chromosomes:
+            self.fasta_dict[index] = "{}chr{}.fa".format(self.fasta_directory, index)
+
+
+    def validate_arguments(self):
+        """
+        Validate the contents of our arg parser argument values
+        :raises RuntimeError
+        """
+        self._check_processors()
+        self._check_repeat_units()
+        self._check_chromosomes()
+        self._check_mode()
+        self._check_bams()
+        self._check_reference_set()
+        self._check_bed_filename()
+        self._check_fasta_filename()
+
+    def _write_phased_output(self, outf, common_keys, all_normal, all_tumor):
+        for name in common_keys:
+            nor = all_normal[name]
+            canc = all_tumor[name]
+            if isinstance(nor, int) == False and isinstance(canc,
+                                                            int) == False:
+                if len(nor) >= self.min_coverage and len(
+                        canc) >= self.min_coverage:
+                    pval_ks = stats.ks_2samp(nor, canc)[1]
+                    outf.write(name + "\t" + ",".join(
+                        [str(x) for x in nor]) + "\t" + ",".join(
+                        [str(x) for x in canc]) + "\t" + str(pval_ks) + "\n")
+
+    def _write_unphased_output(self, outf, common_keys, all_normal, all_tumor):
+        for name in common_keys:
+            nor = all_normal[name]
+            canc = all_tumor[name]
+            if isinstance(nor, int) == False and \
+                            isinstance(canc, int) == False:
+                if len(nor) >= self.min_coverage and \
+                                len(canc) >= self.min_coverage:
+                    pval = stats.ks_2samp(nor, canc)[1]
+                    mo = stats.mode(nor)
+                    percentage = (nor == mo).sum() / len(nor)
+                    confidence = "high" if percentage >= .7 else "low"
+                    outf.write(name + "\t" + ",".join(
+                        [str(x) for x in nor]) + "\t" + ",".join(
+                        [str(x) for x in canc]) + "\t" + str(
+                        pval) + "\t" + confidence + "\n")
