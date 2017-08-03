@@ -31,13 +31,16 @@ We use pip and virtual enviornments to take care of our dependency management
 - [**virtualenvwrapper**](https://virtualenvwrapper.readthedocs.io/en/latest/install.html#installation) (optional, but recommended)
 
 
-# Usage
+# Installation
 
 `$ git clone https://github.com/parklab/MSIprofiler.git && cd MSIprofiler`
 
 `$ mkvirtualenv MSIprofiler-env` (optional, but recommended)
 
 `$ pip install -r requirements.txt`
+
+# Running Tests
+`$ python tests.py`
 
 ## Detection of microsatellites in the human genome
   - MSIprofiler uses a high-confidence reference set of microsatellites derived from the human genome.
