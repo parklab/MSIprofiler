@@ -16,7 +16,9 @@ class MicroSatelliteProfiler:
     """
     CHROMOSOMES = [str(i) for i in range(1, 23)]
     CHROMOSOMES.extend(["X", "Y"])
+    NORMAL_BAM_ERROR_MESSAGE = "Normal bam file does not exist."
     PHASED = "phased"
+    TUMOR_BAM_ERROR_MESSAGE = "Tumor/case bam file does not exist."
     UNPHASED = "unphased"
     VALID_REPEAT_UNITS = [1, 2, 3, 4, 5, 6]
 
@@ -77,10 +79,10 @@ class MicroSatelliteProfiler:
 
     def _check_bams(self):
         if not path.exists(self.tumor_bam):
-            raise RuntimeError("Tumor/case bam file does not exist.")
+            raise RuntimeError(self.TUMOR_BAM_ERROR_MESSAGE)
 
         if not path.exists(self.normal_bam):
-            raise RuntimeError("Normal bam file does not exist.")
+            raise RuntimeError(self.NORMAL_BAM_ERROR_MESSAGE)
 
     def _check_bed_filename(self):
         if not path.exists(self.bed_filename) and self.mode == self.PHASED:
@@ -176,6 +178,7 @@ class MicroSatelliteProfiler:
             "Calculation of the {} microsatellites finished successfully."
             .format(self.mode)
         )
+        print "All calculations finished successfully!\n"
 
     def log_normal_result(self, result):
         self.read_lengths_normal.append(result)
