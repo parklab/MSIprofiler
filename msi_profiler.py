@@ -6,7 +6,7 @@ import argparse
 import models
 
 
-def main():
+def initialize_parser():
     parser = argparse.ArgumentParser(
         description=(
             'MSIprofiler serves to detect microsatellite instability '
@@ -149,12 +149,15 @@ def main():
         default=0,
         type=int
     )
+    return parser
+
+
+def main():
+    parser = initialize_parser()
 
     args = parser.parse_args()
     msi_profiler = models.MicroSatelliteProfiler(args)
     msi_profiler.run()
-
-    print "All calculations finished successfully!\n"
 
 if __name__ == '__main__':
     main()
