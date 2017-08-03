@@ -5,6 +5,8 @@ import sys
 import unittest
 import uuid
 
+import multiprocessing
+
 import msi_profiler
 import scripts.get_reference_set_from_fasta
 import utils
@@ -465,6 +467,27 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertEqual(
             context.exception.message,
             MicroSatelliteProfiler.REPEAT_UNITS_ERROR_MESSAGE
+        )
+
+    def test_not_setting_nprocs_sets_according_to_multiprocessing_lib(self):
+        self.TEST_ARGS.extend(
+            [
+                "--mode",
+                "{}".format(self.mode),
+                "--nprocs",
+                "{}".format(self.SINGLE_PROC),
+                "--output_prefix",
+                "{}".format(self.OUTPUT_PREFIX),
+            ]
+        )
+
+        args = self.create_micro_satellite_profiler_args()
+        args.nprocs = None
+        msp = MicroSatelliteProfiler(args)
+
+        self.assertEqual(
+            multiprocessing.cpu_count(),
+            msp.number_of_processors
         )
 
 
