@@ -28,6 +28,7 @@ class MicroSatelliteProfiler:
     FASTA_DIRECTORY_ERROR_MESSAGE = (
         "Fasta directory correspoding to the reference genome does not exist."
     )
+    NORMAL = "normal"
     NORMAL_BAM_ERROR_MESSAGE = "Normal bam file does not exist."
     NUMBER_OF_PROCESSORS_ERROR_MESSAGE = (
         "The value of the argument `nprocs` needs to be at least 1"
@@ -38,6 +39,7 @@ class MicroSatelliteProfiler:
         "Valid repeat_units are {} or any "
         "combination thereof".format(VALID_REPEAT_UNITS)
     )
+    TUMOR = "tumor"
     TUMOR_BAM_ERROR_MESSAGE = "Tumor/case bam file does not exist."
     UNPHASED = "unphased"
     VALID_MODES = [PHASED, UNPHASED]
@@ -78,10 +80,10 @@ class MicroSatelliteProfiler:
         self.read_lengths_normal_unphased = []
         self.read_lengths_tumor_unphased = []
 
-        self.validate_arguments()
+        self._validate_arguments()
 
-        self.set_fasta_dict()
-        self.populate_reference_sets()
+        self._set_fasta_dict()
+        self._populate_reference_sets()
 
         if self.is_phased:
             with open(self.bed_filename) as bed:
@@ -196,19 +198,19 @@ class MicroSatelliteProfiler:
         )
         print "All calculations finished successfully!\n"
 
-    def log_normal_result(self, result):
+    def _log_normal_result(self, result):
         self.read_lengths_normal.append(result)
 
-    def log_tumor_result(self, result):
+    def _log_tumor_result(self, result):
         self.read_lengths_tumor.append(result)
 
-    def log_unphased_normal_result(self, result):
+    def _log_unphased_normal_result(self, result):
         self.read_lengths_normal_unphased.append(result)
 
-    def log_unphased_tumor_result(self, result):
+    def _log_unphased_tumor_result(self, result):
         self.read_lengths_tumor_unphased.append(result)
 
-    def populate_reference_sets(self, refsets=None):
+    def _populate_reference_sets(self, refsets=None):
         for chromosome in self.chromosomes:
             refsetgen = utils.loadcsv(
                 self.reference_set,
@@ -225,54 +227,94 @@ class MicroSatelliteProfiler:
         self.reference_sets = refsets
 
     def run(self):
+        """
+        Public method that wraps phased/unphased runs and executes them in
+        their multiprocess Pools
+        """
         if self.is_phased:
-            self._run_phased_tumor()
-            self._run_phased_normal()
+            # Phased Normal run
+            self._run_in_pool(
+                utils.phased,
+                self.normal_bam,
+                self.sites,
+                self._log_normal_result,
+                self.NORMAL
+            )
+            # Phased Tumor run
+            self._run_in_pool(
+                utils.phased,
+                self.tumor_bam,
+                self.sites,
+                self._log_tumor_result,
+                self.TUMOR
+            )
 
         if self.is_unphased:
-            self._run_unphased_tumor()
-            self._run_unphased_normal()
+            # Unphased Normal run
+            self._run_in_pool(
+                utils.unphased,
+                self.normal_bam,
+                self.reference_sets,
+                self._log_unphased_normal_result,
+                self.NORMAL
+            )
+            # Unphased Tumor run
+            self._run_in_pool(
+                utils.unphased,
+                self.tumor_bam,
+                self.reference_sets,
+                self._log_unphased_tumor_result,
+                self.TUMOR
+            )
 
         self._conclude_run()
 
-    def _run_phased_tumor(self):
-        print "{}: Extracting MS repeats from tumor bam file..\n".format(
-            self.PHASED.upper()
+    def _run_in_pool(self,
+                     func_to_run,
+                     bam_file,
+                     sites,
+                     logging_method,
+                     tumor_type):
+        """
+        Run phased/unphased MSI detection for normal/tumor bamfiles in a
+        multiprocessing Pool
+        """
+        print "{}: Extracting MS repeats from {} bam file..\n".format(
+            self.mode.upper(),
+            tumor_type
         )
 
         if self.number_of_processors == 1:
-            self.log_tumor_result(
-                utils.phased(self, self.sites, self.tumor_bam)
-            )
+            logging_method(func_to_run(self, sites, bam_file))
         else:
             pool = mp.Pool(self.number_of_processors)
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
                     pool.apply_async(
-                        utils.phased,
+                        func_to_run,
                         args=(
                             self,
-                            self.sites[
+                            sites[
                                 index *
                                 self.chunk_size:(index + 1) *
                                 self.chunk_size
                             ],
-                            self.tumor_bam,
+                            bam_file,
                         ),
-                        callback=self.log_tumor_result
+                        callback=logging_method
                     )
                 else:
                     pool.apply_async(
-                        utils.phased,
+                        func_to_run,
                         args=(
                             self,
-                            self.sites[
+                            sites[
                                 index *
-                                self.chunk_size: len(self.sites)
+                                self.chunk_size: len(sites)
                             ],
-                            self.tumor_bam,
+                            bam_file,
                         ),
-                        callback=self.log_tumor_result
+                        callback=logging_method
                     )
             pool.close()
             pool.join()
@@ -281,150 +323,11 @@ class MicroSatelliteProfiler:
             self.PHASED.upper()
         )
 
-    def _run_phased_normal(self):
-        print "{}: extracting MS repeats from normal bam file..\n".format(
-            self.PHASED.upper()
-        )
-
-        if self.number_of_processors == 1:
-            self.log_normal_result(
-                utils.phased(self, self.sites, self.normal_bam)
-            )
-        else:
-            pool = mp.Pool(self.number_of_processors)
-            for index in np.arange(0, self.number_of_processors):
-                if index != (self.number_of_processors - 1):
-                    pool.apply_async(
-                        utils.phased,
-                        args=(
-                            self,
-                            self.sites[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.normal_bam,
-                        ),
-                        callback=self.log_normal_result
-                    )
-                else:
-                    pool.apply_async(
-                        utils.phased,
-                        args=(
-                            self,
-                            self.sites[
-                            index *
-                            self.chunk_size: len(self.sites)
-                            ],
-                            self.normal_bam,
-                        ),
-                        callback=self.log_normal_result
-                    )
-            pool.close()
-            pool.join()
-
-        print "{}: Normal bam file processed correctly..\n".format(
-            self.PHASED.upper()
-        )
-
-    def _run_unphased_tumor(self):
-        print "Extracting MS repeats ({}) from tumor bam file..\n".format(
-            self.UNPHASED.upper()
-        )
-
-        if self.number_of_processors == 1:
-            self.log_unphased_tumor_result(
-                utils.unphased(self, self.reference_sets,  self.tumor_bam)
-            )
-        else:
-            pool = mp.Pool(self.number_of_processors)
-            for index in np.arange(0, self.number_of_processors):
-                if index != (self.number_of_processors - 1):
-                    pool.apply_async(
-                        utils.unphased,
-                        args=(
-                            self,
-                            self.reference_sets[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.tumor_bam,
-                        ),
-                        callback=self.log_unphased_tumor_result
-                    )
-                else:
-                    pool.apply_async(
-                        utils.unphased,
-                        args=(
-                            self,
-                            self.reference_sets[
-                                index *
-                                self.chunk_size: len(self.reference_sets)
-                            ],
-                            self.tumor_bam,
-                        ),
-                        callback=self.log_unphased_tumor_result
-                    )
-            pool.close()
-            pool.join()
-
-        print "{}: tumor bam file processed correctly..\n".format(
-            self.UNPHASED.upper()
-        )
-
-    def _run_unphased_normal(self):
-        print "Extracting MS repeats ({}) from normal bam file..\n".format(
-            self.UNPHASED.upper()
-        )
-
-        if self.number_of_processors == 1:
-            self.log_unphased_normal_result(
-                utils.unphased(self, self.reference_sets, self.normal_bam)
-            )
-        else:
-            pool = mp.Pool(self.number_of_processors)
-            for index in np.arange(0, self.number_of_processors):
-                if index != (self.number_of_processors - 1):
-                    pool.apply_async(
-                        utils.unphased,
-                        args=(
-                            self,
-                            self.reference_sets[
-                                index *
-                                self.chunk_size:(index + 1) *
-                                self.chunk_size
-                            ],
-                            self.normal_bam,
-                        ),
-                        callback=self.log_unphased_normal_result
-                    )
-                else:
-                    pool.apply_async(
-                        utils.unphased,
-                        args=(
-                            self,
-                            self.reference_sets[
-                                index *
-                                self.chunk_size: len(self.reference_sets)
-                            ],
-                            self.normal_bam,
-                        ),
-                        callback=self.log_unphased_normal_result
-                    )
-            pool.close()
-            pool.join()
-
-        print "{}: normal bam file processed correctly..\n".format(
-            self.UNPHASED
-        )
-
-    def set_fasta_dict(self):
+    def _set_fasta_dict(self):
         for index in self.chromosomes:
             self.fasta_dict[index] = "{}chr{}.fa".format(self.fasta_directory, index)
 
-
-    def validate_arguments(self):
+    def _validate_arguments(self):
         """
         Validate the contents of our arg parser argument values
         :raises RuntimeError
