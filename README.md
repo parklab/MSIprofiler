@@ -45,7 +45,6 @@ We use pip and virtual enviornments to take care of our dependency management
 ## Detection of microsatellites in the human genome
   - MSIprofiler uses a high-confidence reference set of microsatellites derived from the human genome.
  Mapping reads to highly repetitive regions is challenging and the presence of concatenated microsatellites can hamper a correct detection of microsatellite lengths. Therefore, MSIprofiler only considers MS repeats whose flanking regions do not contain MS repeats of more than 5 bases (e.g. AAAAAA). This permits to correctly align the flaking regions and reduce the false positive rate.
-In addition, MSIprofiler discards soft-clipped bases.
 
 To generate the reference set of MS repeats, first download the fasta sequences for the chromosomes by running the file:
 
@@ -78,52 +77,11 @@ Once the reference sets are ready, MSIprofiler can be used.
 Information on the parameters can be accessed by typing:
 ```sh
 $ python msi_profiler.py --help
-
-usage: msi_profiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed BED
-                  --fasta FASTA --reference_set REFERENCE_SET --output_prefix
-                  OUTPUT_PREFIX --mode MODE 
-                  --nprocs NPROCS [-ru RUS] [--min_MS_length MIN_MS_LENGTH]
-                  [--max_MS_length MAX_MS_LENGTH]
-                  [--mapping_quality MAPPING_QUALITY]
-                  [--flank_size FLANK_SIZE] [--min_coverage MIN_COVERAGE]
-                  [--tolerated_mismatches TOLERATED_MISMATCHES]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --tumor_bam TUMOR_BAM
-                        Tumor or case (e.g. single cell) bam file name
-  --normal_bam NORMAL_BAM
-                        Normal or control bam file name
-  --bed BED             Input bed file containing heterozygous SNPs without header detected in a given chromosome. Those of genotype 0/1 are preferred. The input bed files need to be in 0-based coordinates.
-  --fasta FASTA         Input fasta reference file name for the chromosome under study
-  --reference_set REFERENCE_SET
-                        Input reference set of microsatellites
-  --output_prefix OUTPUT_PREFIX
-                        Prefix for the output files
-  --mode MODE           The value of this parameter sets whether MSIprofiler will detect MSI focusing only on microsatellites phased with germline SNPs (phased), all microsatellites contained in the reference sets that can be detected in the input bam files (unphased), or both (both).
-  --nprocs NPROCS       Number of processes to be launched. If equal to 1, the serial implementation is used. If higher than 1, as many  processes as the value of this argument will be launched.
-  -ru RUS               MS repeat units to be considered (e.g. mono, di, tri, tetra, ..). Specify these as integers (e.g. 1, 2, 3, 4, ..).
-  --min_MS_length MIN_MS_LENGTH
-                        Minimum length of microsatellites to be considered.
-                        Minimum available is 6; default is 10.
-  --max_MS_length MAX_MS_LENGTH
-                        Maximum length of microsatellites to be considered.
-                        Maximum available is 60; default is 60.
-  --mapping_quality MAPPING_QUALITY
-                        Minimum mapping quality. Default is 40.
-  --flank_size FLANK_SIZE
-                        Minimum length of the flanking regions. Default is 10
-  --min_coverage MIN_COVERAGE
-                        Minimum coverage at each MS locus -both in the case
-                        and control bams-. Default is 10
-  --tolerated_mismatches TOLERATED_MISMATCHES
-                        Maximum number of tolerated mismatches in the flanking
-                        regions. Default is 0
 ```
 
 Example of usage:
 ```sh
-python path_to_msi_profiler/msi_profiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs_chr7.bed  --fasta path_to_MSIprofiler/chrs_fa/chr7.fa  --output_prefix example_chr7  --mode unphased --nprocs 8  --reference_set path_to_MSIprofiler/MSIprofiler/reference_set_7_sorted.txt --min_coverage 8 --min_MS_length 6 --flank_size 10 -ru 1 -ru 2 -ru 3 -ru 4 -ru 5  --tolerated_mismatches 0
+python path_to_msi_profiler/msi_profiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs_chr22.bed --chromosomes 22  --fasta path_to_MSIprofiler/chrs_fa/ --output_prefix example_chr22  --mode unphased --nprocs 8  --reference_set path_to_reference_sets_folder --min_coverage 8 --min_MS_length 6 --flank_size 10 --rus 1 2 3 4 5 6  --tolerated_mismatches 0
 ```
 
 ## Haplotype-specific detection of MSI
@@ -134,37 +92,38 @@ The steps followed by MSIprofiler for the detection of haplotype-specific MSI ar
 - Detect whether the reads covering each allele of the input germline heterozygous SNP also contain MS repeats that are present in the reference set. This step is applied across all input SNPs to both the normal and the tumor/case samples using the input bam files.
 - Compare the distribution of MS lengths (i.e. read length distributions) in the normal and tumor/case samples using the Kolmogorov-Smirnov test.
 
-To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'both' or 'phased'.
+To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'phased'.
 
 The bed files containing the heterozygous SNPs in 0-based coordinates need to have the following columns: chr, start, end, ref and alt.
 For instance, an entry would look like:
 7	20607	20608	A	G
 
 ### Example of output
-10	52539934	C	52539942	10,10,10,10	10,10,10,10,10,10,10,10,10,10,10	1.0
+22	16116649	AGAAGAAG	3	8	0.3	G	16116721	8,8,8,8,8,8	8,8,8,8,8,8,8	1.0
 The columns correspond to:
 1. chromosome
 2. start of the MS repeat (0-based)
-3. SNP allele
-4. SNP start (0-based)
-5. length of the MS repeat in the normal/control sample
-6. length of the MS repeat in the tumor/case sample
-7. Kolmogorov-Smirnov P value
+3. microsatellite repeat
+4. microsatellite repeat motif length
+5. microsatellite length in the reference genome
+6. GC contents in the flanking regions in the reference genome (2000 bases)
+7. SNP allele
+8. SNP start (0-based)
+9. length of the MS repeats detected in the normal/control sample
+10. length of the MS repeats detected in the tumor/case sample
+11. Kolmogorov-Smirnov P value
 
 ## Detection of MSI (unphased) by comparing read-length distributions across both alleles
 
 MSIprofiler detecs MSI directly from the sequencing data without considering phasing information in a similar manner as
 the experimental assays customarily used for MSI detection (e.g. capillary sequencing-based fragment length assay). 
-To this aim, the length of a given repeat present in the reference set is measured using the reads from both the normal and tumor/case samples. Next, the Kolmogorov-Smirnov test is used to test for a significant difference in the distributions. These steps are applied across all MS repeats in the reference set sufficiently covered by the sequencing data (default is 10 reads).
+To this aim, the lengths of a given repeat present in the reference set are measured using the reads from both the normal and tumor/case samples. Next, the Kolmogorov-Smirnov test is used to test for a significant difference in the distributions. 
+These steps are applied across all MS repeats in the reference set sufficiently covered by the sequencing data (default is 10 reads).
 
-To calculate haplotype-specific MSI, the parameter "mode" needs to be set to 'both' or 'unphased'.
-
-The bed files containing the heterozygous SNPs in 0-based coordinates need to have the following columns: chr, start, end, ref and alt.
-For instance, an entry would look like:
-7	20607	20608	A	G
+In this case, the parameter "mode" needs to be set to 'unphased'.
 
 ### Example of output
-1	143256761	143256771	AACAACAACAA	3	11	11,11,11,11,11,11,11,11	11,11,11,11,11,11,11,11,11	1.0	high
+22	16138703	16138712	ACAAGACAAG	5	10	0.4	10,10,10,10,10,10	10,10,10,10,10,10,10,10,10,10,10,10	1.0	high
 The columns correspond to:
 1. chromosome
 2. start of the MS repeat (0-based)
@@ -185,7 +144,7 @@ The assumptions of this methodology are that:
 
 These assumptions are however not always met in tumor samples due to aneuploidy (e.g., focal amplifications or deletions, whole-chromosome gains/losses, etc..). Moreover, intratumor heterogeneity represents a potential confounding factor if an MS repeat is altered in only a subset of the cancer cells (i.e. subclonal mutation). We note that intratumor heterogeneity, as well as tumor purity, are the main reasons why it is challenging to define a pan-cancer statistical model to genotype microsatellites in tumor samples in a similar way as it is done for normal cases.
 
-In the case of single-cell sequencing data where the polymerase phi29 is generally used for amplification (e.g. multiple displacement amplification or MDA), large regions of the genome are not amplified evenly (allelic imbalance or even allelic dropout). 
+<!--In the case of single-cell sequencing data where the polymerase phi29 is generally used for amplification (e.g. multiple displacement amplification or MDA), large regions of the genome are not amplified evenly (allelic imbalance or even allelic dropout). -->
 
 These issues are relevant for MSI detection, as the imbalance between alleles represents a source of false positives for heterozygous microsatellites. To account for this, we assign a confidence level to each of the unphased calls based on whether the 
 MS repeat under consideration is homozygous or heterozygous in the germline. 
@@ -202,7 +161,7 @@ we assign high-confidence to the unphased calls made on MS repeats that are homo
 and low confidence to those calls made on heterozygous MS repeats.
 We consider that an MS repeat is homozygous in the normal if at least 70% of the reads support the same MS length. 
 
-Overall, we recommend using phased calls whenever possible.
+<!-- Overall, we recommend using phased calls whenever possible.-->
 
 # A comment on the number of mismatches in the flanking regions and the length of these
 
