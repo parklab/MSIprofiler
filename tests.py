@@ -219,11 +219,9 @@ class MSIProfilerTests(unittest.TestCase):
             output_prefix=self.OUTPUT_PREFIX_MULTICORE
         )
 
-        # The outputs of multicore unphased runs are always slightly off
-        # from the output from MSIProfiler_2.py
-        # with open(self.output_file) as test_out, \
-        #     open(self.GOOD_UNPHASED_MULTICORE) as known_good:
-        #     self.assertEqual(known_good.read(), test_out.read())
+        with open(self.output_file) as test_out, \
+                open(self.GOOD_UNPHASED_MULTICORE) as known_good:
+            self.assertEqual(known_good.read(), test_out.read())
 
     def test_is_phased(self):
         self.TEST_ARGS.extend(
