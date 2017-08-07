@@ -113,9 +113,7 @@ class MicroSatelliteProfiler:
 
     def _check_bed_filename(self):
         if not path.exists(self.bed_filename) and self.mode == self.PHASED:
-            raise RuntimeError(
-                self.BED_FILE_ERROR_MESSAGE
-            )
+            raise RuntimeError(self.BED_FILE_ERROR_MESSAGE)
 
     def _check_chromosomes(self):
         for chromosome in self.chromosomes:
@@ -128,9 +126,7 @@ class MicroSatelliteProfiler:
 
     def _check_mode(self):
         if self.mode not in self.VALID_MODES:
-            raise RuntimeError(
-                self.VALID_MODES_ERROR_MESSAGE
-            )
+            raise RuntimeError(self.VALID_MODES_ERROR_MESSAGE)
 
     def _check_processors(self):
         if self.number_of_processors is None:
@@ -223,7 +219,6 @@ class MicroSatelliteProfiler:
             # get the index positions
             refset_ini_end = [x[1] for x in refsets]
             self.reference_set_ini_end_dict[chromosome] = refset_ini_end
-
         self.reference_sets = refsets
 
     def run(self):
