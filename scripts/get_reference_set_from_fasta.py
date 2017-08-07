@@ -23,7 +23,7 @@ def write_reference_set_file(o, sequence):
     ## XX add to REFINE THE SET
     ## add to find location
 
-    with open("reference_set_" + str(chr) + "_up_to_5rep_in_flank.txt",
+    with open("reference_set_" + str(chr) + ".txt",
               'w') as f:
         for ms in o:
             repeats_flanking_left = utils.find_repeats(
