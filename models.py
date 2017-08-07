@@ -287,7 +287,11 @@ class MicroSatelliteProfiler:
         if self.number_of_processors == 1:
             logging_method(func_to_run(self, sites, bam_file))
         else:
-            pool = mp.Pool(self.number_of_processors)
+            pool = mp.Pool(
+                self.number_of_processors,
+                initializer=utils.multiprocessing_lock_init,
+                initargs=(mp.Lock(),)
+            )
             for index in np.arange(0, self.number_of_processors):
                 if index != (self.number_of_processors - 1):
                     pool.apply_async(
