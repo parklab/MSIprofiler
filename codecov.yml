@@ -1,0 +1,3 @@
+ignore:
+  - "MSIprofiler_2.py"
+  - "scripts/*.py"

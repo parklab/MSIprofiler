@@ -1,4 +1,4 @@
-# MSIprofiler
+# MSIprofiler [![Build Status](https://travis-ci.com/parklab/MSIprofiler.svg?token=EkzyvwdZ2jcY78ErmS88&branch=master)](https://travis-ci.com/parklab/MSIprofiler) [![codecov](https://codecov.io/gh/parklab/MSIprofiler/branch/master/graph/badge.svg?token=PMpspJNu0Z)](https://codecov.io/gh/parklab/MSIprofiler)
 
 MSIprofiler is a tool to detect microsatellite instability (MSI) from sequencing data.
 Its functionalities include:
@@ -21,28 +21,26 @@ Isidro Cortes-Ciriano et al. Nat. Commun. 2017 (https://www.nature.com/articles/
 MSIprofiler is free for academic use **only**. 
 For non-academic use, please email Dr. Tatiana Demidova-Rice at Harvard University Office of Technology Development (tatiana\_demidova-rice@harvard.edu)
 
-# Requirements
+# Pre-reqs
 
-MSIprofiler is written entirely in python and has been developed using the following python and library versions:
+MSIprofiler is written entirely in python and has been developed using the following python version:
+- **python**: 2.7.6 (default, Aug  3 2015, 17:43:52)  [GCC 4.4.7 20120313 (Red Hat 4.4.7-11)] 
 
-- python: 2.7.6 (default, Aug  3 2015, 17:43:52)  [GCC 4.4.7 20120313 (Red Hat 4.4.7-11)] 
-- numpy: 1.10.1
-- scipy: 0.17.0
-- csv: 1.0
-- multiprocessing: 0.70a1
-- argparse: 1.1
-- pysam: 0.10.0
-- bisect: 2.1
+We use pip and virtual enviornments to take care of our dependency management
+- [**pip**](https://pip.pypa.io/en/stable/installing/)
+- [**virtualenvwrapper**](https://virtualenvwrapper.readthedocs.io/en/latest/install.html#installation) (optional, but recommended)
 
 
-# Usage
+# Installation
 
-First clone the repository to your computer:
+`$ git clone https://github.com/parklab/MSIprofiler.git && cd MSIprofiler`
 
-```sh
-$ git clone https://github.com/parklab/MSIprofiler.git
-$ cd MSIprofiler
-```
+`$ mkvirtualenv MSIprofiler-env` (optional, but recommended)
+
+`$ pip install -r requirements.txt`
+
+# Running Tests
+`$ python tests.py`
 
 ## Detection of microsatellites in the human genome
   - MSIprofiler uses a high-confidence reference set of microsatellites derived from the human genome.
@@ -52,13 +50,13 @@ In addition, MSIprofiler discards soft-clipped bases.
 To generate the reference set of MS repeats, first download the fasta sequences for the chromosomes by running the file:
 
 ```sh
-$ ./download_chromosomes_fa.sh
+$ ./scripts/download_chromosomes_fa.sh
 ```
 
 - Once the fasta sequences are downloaded, run the following two scripts in the root directory of MSIprofiler: 
 ```sh
-$ python get_reference_set_from_fasta.py
-$ ./sort_reference_sets.sh
+$ python scripts/get_reference_set_from_fasta.py
+$ ./scripts/sort_reference_sets.sh
 ```
 
 These scripts will generate one file per chromosome containing the reference sets of MS repeats (coordinate-sorted).
@@ -79,9 +77,9 @@ Once the reference sets are ready, MSIprofiler can be used.
 
 Information on the parameters can be accessed by typing:
 ```sh
-$ python MSIprofiler.py --help
+$ python msi_profiler.py --help
 
-usage: MSIprofiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed BED
+usage: msi_profiler.py [-h] --tumor_bam TUMOR_BAM --normal_bam NORMAL_BAM --bed BED
                   --fasta FASTA --reference_set REFERENCE_SET --output_prefix
                   OUTPUT_PREFIX --mode MODE 
                   --nprocs NPROCS [-ru RUS] [--min_MS_length MIN_MS_LENGTH]
@@ -125,7 +123,7 @@ optional arguments:
 
 Example of usage:
 ```sh
-python path_to_MSIprofiler/MSIprofiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs_chr7.bed  --fasta path_to_MSIprofiler/chrs_fa/chr7.fa  --output_prefix example_chr7  --mode unphased --nprocs 8  --reference_set path_to_MSIprofiler/MSIprofiler/reference_set_7_sorted.txt --min_coverage 8 --min_MS_length 6 --flank_size 10 -ru 1 -ru 2 -ru 3 -ru 4 -ru 5  --tolerated_mismatches 0
+python path_to_msi_profiler/msi_profiler.py  --tumor_bam tumor.bam  --normal_bam normal.bam --bed hets_SNPs_chr7.bed  --fasta path_to_MSIprofiler/chrs_fa/chr7.fa  --output_prefix example_chr7  --mode unphased --nprocs 8  --reference_set path_to_MSIprofiler/MSIprofiler/reference_set_7_sorted.txt --min_coverage 8 --min_MS_length 6 --flank_size 10 -ru 1 -ru 2 -ru 3 -ru 4 -ru 5  --tolerated_mismatches 0
 ```
 
 ## Haplotype-specific detection of MSI
