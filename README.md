@@ -98,7 +98,7 @@ For instance, an entry would look like:
 
 ### Example of usage
 ```sh
-python /n/data1/hms/dbmi/park/icortes/MSIprofiler/msi_profiler.py --tumor_bam test_tumor.bam  --normal_bam test_normal.bam  --bed germline_het_SNPs.bed --chromosomes 21 22 X --fasta /n/data1/hms/dbmi/park/icortes/MSIprofiler/chrs_fa/  --output_prefix example_unphased --mode unphased --nprocs 2  --reference_set path_to_reference_sets_folder  --min_coverage 8 --min_MS_length 6 --flank_size 5 --rus 1 2 3 4 5 6 
+python msi_profiler.py --tumor_bam test_tumor.bam  --normal_bam test_normal.bam  --bed germline_het_SNPs.bed --chromosomes 21 22 X --fasta ./chrs_fa/  --output_prefix example_unphased --mode unphased --nprocs 2  --reference_set path_to_reference_sets_folder  --min_coverage 8 --min_MS_length 6 --flank_size 5 --rus 1 2 3 4 5 6 
 ```
 
 ### Example of output
@@ -127,7 +127,7 @@ In this case, the parameter "mode" needs to be set to 'unphased'.
 
 ### Example of usage
 ```sh
-python /n/data1/hms/dbmi/park/icortes/MSIprofiler/msi_profiler.py --tumor_bam test_tumor.bam  --normal_bam test_normal.bam  --bed None --chromosomes 22 --fasta /n/data1/hms/dbmi/park/icortes/MSIprofiler/chrs_fa/  --output_prefix example_unphased --mode unphased --nprocs 2  --reference_set path_to_reference_sets_folder  --min_coverage 8 --min_MS_length 6 --flank_size 5 --rus 1 2 3 4 5 6 
+python msi_profiler.py --tumor_bam test_tumor.bam  --normal_bam test_normal.bam  --bed None --chromosomes 22 --fasta ./chrs_fa/  --output_prefix example_unphased --mode unphased --nprocs 2  --reference_set path_to_reference_sets_folder  --min_coverage 8 --min_MS_length 6 --flank_size 5 --rus 1 2 3 4 5 6 
 ```
 
 ### Example of output
