@@ -9,8 +9,8 @@ import models
 def initialize_parser():
     parser = argparse.ArgumentParser(
         description=(
-            'MSIprofiler serves to detect microsatellite instability '
-            'from sequencing data. Type MSIprofiler.py --help for '
+            'msi_profiler serves to detect microsatellite instability '
+            'from sequencing data. Type msi_profiler.py --help for '
             'further instructions.'
         )
     )
