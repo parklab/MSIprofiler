@@ -148,7 +148,7 @@ class MicroSatelliteProfiler:
         if self.number_of_processors > 1:
             all_normal = {}
             all_tumor = {}
-            for i in range(1, self.number_of_processors):
+            for i in range(0, self.number_of_processors):
                 if self.is_phased:
                     all_normal.update(self.read_lengths_normal[i])
                     all_tumor.update(self.read_lengths_tumor[i])
