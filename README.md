@@ -63,12 +63,10 @@ These scripts will generate one file per chromosome containing the reference set
 Make sure to add the current directory to your PYTHONPATH:
 export PYTHONPATH=$PYTHONPATH:$PWD
 
-Note: the coordinates of the reference MS sets are 1-based.
-
-### Detection of microsatellites
+<!-- ### Detection of microsatellites
 
 ![examples_detection](https://user-images.githubusercontent.com/5588266/28093196-42fedc6a-6664-11e7-9e8a-04d555a88e7e.png)
-
+-->
 
 ## MSIprofiler parameters
 
