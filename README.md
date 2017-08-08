@@ -96,6 +96,11 @@ The bed files containing the heterozygous SNPs in 0-based coordinates need to ha
 For instance, an entry would look like:
 7	20607	20608	A	G
 
+### Example of usage
+```sh
+python /n/data1/hms/dbmi/park/icortes/MSIprofiler/msi_profiler.py --tumor_bam test_tumor.bam  --normal_bam test_normal.bam  --bed germline_het_SNPs.bed --chromosomes 21 22 X --fasta /n/data1/hms/dbmi/park/icortes/MSIprofiler/chrs_fa/  --output_prefix example_unphased --mode unphased --nprocs 2  --reference_set path_to_reference_sets_folder  --min_coverage 8 --min_MS_length 6 --flank_size 5 --rus 1 2 3 4 5 6 
+```
+
 ### Example of output
 22	16116649	AGAAGAAG	3	8	0.3	G	16116721	8,8,8,8,8,8	8,8,8,8,8,8,8	1.0
 The columns correspond to:
@@ -119,6 +124,11 @@ To this aim, the lengths of a given repeat present in the reference set are meas
 These steps are applied across all MS repeats in the reference set sufficiently covered by the sequencing data (default is 10 reads).
 
 In this case, the parameter "mode" needs to be set to 'unphased'.
+
+### Example of usage
+```sh
+python /n/data1/hms/dbmi/park/icortes/MSIprofiler/msi_profiler.py --tumor_bam test_tumor.bam  --normal_bam test_normal.bam  --bed None --chromosomes 22 --fasta /n/data1/hms/dbmi/park/icortes/MSIprofiler/chrs_fa/  --output_prefix example_unphased --mode unphased --nprocs 2  --reference_set path_to_reference_sets_folder  --min_coverage 8 --min_MS_length 6 --flank_size 5 --rus 1 2 3 4 5 6 
+```
 
 ### Example of output
 22	16138703	16138712	ACAAGACAAG	5	10	0.4	10,10,10,10,10,10	10,10,10,10,10,10,10,10,10,10,10,10	1.0	high
