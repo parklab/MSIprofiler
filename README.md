@@ -154,7 +154,8 @@ This is due to the fact that the read length distribution for a homozygous micro
 By contrast, in the case of heterozygous MS repeats the read length distribution is bimodal, with each mode corresponding
 to one alelle. If one allele is lost in the tumor/case sample (e.g. one-chromosome loss or focal deletion), the read length distributions between the normal and tumor samples would differ significantly, hence leading to a false positive. This situation can also happen if one copy has been amplified hundreds of times (e.g. in a double minute chromosome). In such a case, the high imbalance in copy number between the two alleles would be refleceted in the seqeuncing data, as the faction of reads coming from the unamplified allele would be underrepresented. Hence, the read length distribution would differ significantly in this case even if there is no real mutation.
 
-Ideally, only MSI calls calculated for MS repeats located in regions at copy number of 2 without loss of heterozygosity should be considered. Given that copy number information is not always available,
+<!--Ideally, only MSI calls calculated for MS repeats located in regions at copy number of 2 without loss of heterozygosity should be considered. -->
+Given that copy number information is not always available,
 we assign high-confidence to the unphased calls made on MS repeats that are homozygous in the germline,
 and low confidence to those calls made on heterozygous MS repeats.
 We consider that an MS repeat is homozygous in the normal if at least 70% of the reads support the same MS length. 
