@@ -209,7 +209,7 @@ class MicroSatelliteProfiler:
     def _populate_reference_sets(self, refsets=None):
         for chromosome in self.chromosomes:
             refsetgen = utils.loadcsv(
-                self.reference_set,
+                self.reference_set+"/reference_set_"+str(chromosome)+"_sorted.txt",
                 self.min_microsatellite_length,
                 self.max_microsatellite_length,
                 self.repeat_units
