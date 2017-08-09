@@ -2,7 +2,7 @@ import argparse
 from reps_from_reference  import find_repeats
 
 parser = argparse.ArgumentParser(description='usage: get_reference_set_from_fasta.py --chr 1 --notation Ensemble --min_score 5')
-parser.add_argument('--chr', help='Chromosome',required=True)
+parser.add_argument('--chr', help='Chromosome',required=False,default=22)
 # Optional arguments
 parser.add_argument('--notation', help='Chromosome notation. The two options are: Ensemble (e.g. 1,2,3,..) or UCSC (e.g. chr1, chr2, chr3,..)',required=False, default="Ensemble",choices=["Ensemble","UCSC"])
 parser.add_argument('--min_score', help='Minimum score to detect microsatellites in the flanking regions. Default is 4.',required=False,default=5,type=int)
