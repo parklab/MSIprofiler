@@ -15,7 +15,7 @@ from models import MicroSatelliteProfiler
 
 class MSIProfilerTests(unittest.TestCase):
     BAD_PATH = "This path doesn't exist"
-    CHROMOSOME = 22
+    CHROMOSOMES = 22
     TEST_DIR = "test-data"
     TUMOR_BAM_PATH = TEST_DIR
     NORMAL_BAM_PATH = TEST_DIR
@@ -43,12 +43,11 @@ class MSIProfilerTests(unittest.TestCase):
             "--bed",
             "{}/germline_calls_22_sel1k.bed".format(self.BEDFILE_PATH),
             "--chromosomes",
-            "{}".format(self.CHROMOSOME),
+            "{}".format(self.CHROMOSOMES),
             "--fasta",
             "{}/chrs_fa/".format(self.FASTA_PATH),
             "--reference_set",
             "{}".format(self.REF_SET_PATH),
-            #"{}/reference_set_22_sorted_test.txt".format(self.REF_SET_PATH),
             "--min_coverage",
             "5",
             "--min_MS_length",
@@ -89,7 +88,7 @@ class MSIProfilerTests(unittest.TestCase):
                 "{}".format(output_prefix),
             ]
         )
-        self.TEST_ARGS.pop(0)
+        sys.argv = []
         sys.argv.extend(self.TEST_ARGS)
         msi_profiler.main()
 
@@ -171,7 +170,7 @@ class MSIProfilerTests(unittest.TestCase):
         )
         self.assertEqual(msp.VALID_REPEAT_UNITS, [1, 2, 3, 4, 5, 6])
 
-    def test_phased(self):
+    def test_phased_run(self):
         self.mode = MicroSatelliteProfiler.PHASED
         self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
 
@@ -181,7 +180,7 @@ class MSIProfilerTests(unittest.TestCase):
                 open(self.GOOD_PHASED) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
-    def test_unphased(self):
+    def test_unphased_run(self):
         self.mode = MicroSatelliteProfiler.UNPHASED
         self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
 
@@ -191,7 +190,7 @@ class MSIProfilerTests(unittest.TestCase):
                 open(self.GOOD_UNPHASED) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
-    def test_multicore_phased(self):
+    def test_multicore_phased_run(self):
         self.mode = MicroSatelliteProfiler.PHASED
         self.output_file = "{}_{}.txt".format(
             self.OUTPUT_PREFIX_MULTICORE,
@@ -207,7 +206,7 @@ class MSIProfilerTests(unittest.TestCase):
                 open(self.GOOD_PHASED_MULTICORE) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
-    def test_multicore_unphased(self):
+    def test_multicore_unphased_run(self):
         self.output_prefix = "test_multicore"
         self.mode = MicroSatelliteProfiler.UNPHASED
         self.output_file = "{}_{}.txt".format(
@@ -333,7 +332,7 @@ class MSIProfilerTests(unittest.TestCase):
         )
 
     def test_bad_chromosomes_raises_proper_exceptions(self):
-        self.CHROMOSOME = "Coffee is not a chromosome"
+        self.CHROMOSOMES = "Coffee is not a chromosome"
         self.setUp()
         self.TEST_ARGS.extend(
             [
@@ -488,6 +487,24 @@ class MSIProfilerTests(unittest.TestCase):
             multiprocessing.cpu_count(),
             msp.number_of_processors
         )
+
+    @mock.patch.object(MicroSatelliteProfiler, "_run_in_pool")
+    @mock.patch.object(MicroSatelliteProfiler, "_conclude_run")
+    def test_multiple_chroms_for_unphased_runs_in_pool_n_times_chrom_number(
+            self,
+            conclude_mock,
+            run_in_pool_mock
+    ):
+        self.mode = MicroSatelliteProfiler.UNPHASED
+        self.TEST_ARGS.insert(8, "2")
+        self.output_file = "{}_{}.txt".format(self.OUTPUT_PREFIX, self.mode)
+
+        self.run_msiprofiler(self.SINGLE_PROC)
+
+        self.assertEqual(conclude_mock.call_count, 1)
+        self.assertEqual(run_in_pool_mock.call_count, 4)
+
+
 
 
 class GetReferenceSetTestCase(unittest.TestCase):

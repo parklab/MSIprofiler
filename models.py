@@ -2,6 +2,7 @@
 # https://stackoverflow.com/questions/1799527/numpy-show-decimal-values-in-array-results
 from __future__ import division
 import csv
+import os
 from os import path
 import multiprocessing as mp
 import numpy as np
@@ -67,7 +68,7 @@ class MicroSatelliteProfiler:
         self.normal_bam = arguments.normal_bam
         self.number_of_processors = arguments.nprocs
         self.output_prefix = arguments.output_prefix
-        self.reference_set = arguments.reference_set
+        self.reference_set_base_dir = arguments.reference_set
         self.repeat_units = set(arguments.rus)
         self.tolerated_mismatches = arguments.tolerated_mismatches
         self.tumor_bam = arguments.tumor_bam
@@ -136,7 +137,7 @@ class MicroSatelliteProfiler:
             raise RuntimeError(self.NUMBER_OF_PROCESSORS_ERROR_MESSAGE)
 
     def _check_reference_set(self):
-        if not path.exists(self.reference_set) and self.mode == self.UNPHASED:
+        if not path.exists(self.reference_set_base_dir) and self.mode == self.UNPHASED:
             raise RuntimeError(self.REFERENCE_SET_ERROR_MESSAGE)
 
     def _check_repeat_units(self):
@@ -209,8 +210,10 @@ class MicroSatelliteProfiler:
     def _populate_reference_sets(self, refsets=None):
         for chromosome in self.chromosomes:
             refsetgen = utils.loadcsv(
-                #self.reference_set, #+"/reference_set_"+str(chromosome)+"_sorted.txt",
-                self.reference_set+"/reference_set_"+str(chromosome)+"_sorted.txt",
+                os.path.join(
+                    self.reference_set_base_dir,
+                    "reference_set_{}_sorted.txt".format(chromosome)
+                ),
                 self.min_microsatellite_length,
                 self.max_microsatellite_length,
                 self.repeat_units
@@ -247,6 +250,7 @@ class MicroSatelliteProfiler:
 
         if self.is_unphased:
             for chr in self.chromosomes:
+
                 # Unphased Normal run
                 self._run_in_pool(
                     utils.unphased,
