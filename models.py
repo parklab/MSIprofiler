@@ -209,8 +209,8 @@ class MicroSatelliteProfiler:
     def _populate_reference_sets(self, refsets=None):
         for chromosome in self.chromosomes:
             refsetgen = utils.loadcsv(
-                self.reference_set, #+"/reference_set_"+str(chromosome)+"_sorted.txt",
-                #self.reference_set+"/reference_set_"+str(chromosome)+"_sorted.txt",
+                #self.reference_set, #+"/reference_set_"+str(chromosome)+"_sorted.txt",
+                self.reference_set+"/reference_set_"+str(chromosome)+"_sorted.txt",
                 self.min_microsatellite_length,
                 self.max_microsatellite_length,
                 self.repeat_units
@@ -246,22 +246,23 @@ class MicroSatelliteProfiler:
             )
 
         if self.is_unphased:
-            # Unphased Normal run
-            self._run_in_pool(
-                utils.unphased,
-                self.normal_bam,
-                self.reference_sets,
-                self._log_unphased_normal_result,
-                self.NORMAL
-            )
-            # Unphased Tumor run
-            self._run_in_pool(
-                utils.unphased,
-                self.tumor_bam,
-                self.reference_sets,
-                self._log_unphased_tumor_result,
-                self.TUMOR
-            )
+            for chr in self.chromosomes:
+                # Unphased Normal run
+                self._run_in_pool(
+                    utils.unphased,
+                    self.normal_bam,
+                    self.reference_set_dict[chr],
+                    self._log_unphased_normal_result,
+                    self.NORMAL
+                )
+                # Unphased Tumor run
+                self._run_in_pool(
+                    utils.unphased,
+                    self.tumor_bam,
+                    self.reference_set_dict[chr],
+                    self._log_unphased_tumor_result,
+                    self.TUMOR
+                )
 
         self._conclude_run()
 
@@ -279,7 +280,6 @@ class MicroSatelliteProfiler:
             self.mode.upper(),
             tumor_type
         )
-
         if self.number_of_processors == 1:
             logging_method(func_to_run(self, sites, bam_file))
         else:
