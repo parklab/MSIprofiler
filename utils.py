@@ -7,10 +7,7 @@ import numpy as np
 MATCH_SCORE = 1  # score for a match
 MISMATCH_SCORE = -6  # score penalty for a mismatch
 FAIL_SCORE = -1  # score value to stop searching
-MIN_SCORE = 4  # minimum score value to pass. The minimum length of MS repeats
-
-
-# detected is min_score + 4
+MIN_SCORE = 5  # minimum score value to pass. The minimum length of MS repeats
 
 
 # https://stackoverflow.com/questions/212358/binary-search-bisection-in-python
