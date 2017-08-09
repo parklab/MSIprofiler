@@ -8,7 +8,7 @@ import uuid
 import multiprocessing
 
 import msi_profiler
-import scripts.get_reference_set_from_fasta
+#import scripts.get_reference_set_from_fasta
 import utils
 from models import MicroSatelliteProfiler
 
@@ -491,15 +491,15 @@ class MSIProfilerTests(unittest.TestCase):
 
 
 class GetReferenceSetTestCase(unittest.TestCase):
-    @mock.patch.object(scripts.get_reference_set_from_fasta,
-                       "write_reference_set_file")
-    @mock.patch.object(scripts.get_reference_set_from_fasta, "load_fasta_file")
+    #@mock.patch.object(scripts.get_reference_set_from_fasta,
+    #                   "write_reference_set_file")
+    #@mock.patch.object(scripts.get_reference_set_from_fasta, "load_fasta_file")
     @mock.patch.object(utils, "find_repeats")
     def test_proper_methods_are_called(self,
                                        find_repeats_mock,
                                        load_fasta_mock,
                                        write_reference_set_mock):
-        scripts.get_reference_set_from_fasta.fetch_reference_sets()
+        #scripts.get_reference_set_from_fasta.fetch_reference_sets()
         self.assertTrue(find_repeats_mock.called)
         self.assertTrue(load_fasta_mock.called)
         self.assertTrue(write_reference_set_mock.called)
