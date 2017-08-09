@@ -8,8 +8,7 @@ import uuid
 import multiprocessing
 
 import msi_profiler
-#import scripts.get_reference_set_from_fasta
-import utils
+import scripts.get_reference_set_from_fasta
 from models import MicroSatelliteProfiler
 
 
@@ -505,21 +504,24 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertEqual(run_in_pool_mock.call_count, 4)
 
 
-
-
 class GetReferenceSetTestCase(unittest.TestCase):
-    #@mock.patch.object(scripts.get_reference_set_from_fasta,
-    #                   "write_reference_set_file")
-    #@mock.patch.object(scripts.get_reference_set_from_fasta, "load_fasta_file")
-    @mock.patch.object(utils, "find_repeats")
-    def test_proper_methods_are_called(self,
-                                       find_repeats_mock,
-                                       load_fasta_mock,
-                                       write_reference_set_mock):
-        #scripts.get_reference_set_from_fasta.fetch_reference_sets()
-        self.assertTrue(find_repeats_mock.called)
-        self.assertTrue(load_fasta_mock.called)
-        self.assertTrue(write_reference_set_mock.called)
+    def setUp(self):
+        self.TEST_ARGS = [
+            "scripts/get_reference_set_from_fast.py",
+            "--chr",
+            "22",
+            "--notation",
+            "Ensemble"
+            "--min_score",
+            "5"
+        ]
+
+    @mock.patch("scripts.get_reference_set_from_fasta.main")
+    def test_proper_methods_are_called(self, main_mock):
+        sys.argv = []
+        sys.argv.extend(self.TEST_ARGS)
+        scripts.get_reference_set_from_fasta.main()
+        self.assertTrue(main_mock.called)
 
 
 if __name__ == '__main__':
