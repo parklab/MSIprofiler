@@ -24,6 +24,10 @@ class MSIProfilerTests(unittest.TestCase):
     GOOD_UNPHASED = "{}/good_unphased.txt".format(TEST_DIR)
     GOOD_PHASED_MULTICORE = "{}/good_phased_multi.txt".format(TEST_DIR)
     GOOD_UNPHASED_MULTICORE = "{}/good_unphased_multi.txt".format(TEST_DIR)
+    GOOD_UNPHASED_MULTICORE_2_CHROMS = "{}/good_2chrs_unphased.txt".format(
+        TEST_DIR
+    )
+
     OUTPUT_PREFIX = "{}_test".format(str(uuid.uuid4()))
     OUTPUT_PREFIX_MULTICORE = OUTPUT_PREFIX + "_multicore"
     MULTI_PROC = 2
@@ -596,7 +600,7 @@ class MSIProfilerTests(unittest.TestCase):
         )
 
         with open(self.output_file) as test_out, \
-                open(self.GOOD_UNPHASED_MULTICORE) as known_good:
+                open(self.GOOD_UNPHASED_MULTICORE_2_CHROMS) as known_good:
             self.assertEqual(known_good.read(), test_out.read())
 
 
