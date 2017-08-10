@@ -86,7 +86,8 @@ def main():
                 min_score=args.min_score
             )
             if len(repeats_flanking_left) == 0 and \
-                    len(repeats_flanking_right) == 0:
+                    len(repeats_flanking_right) == 0 and \
+					int(ms[5]) <= args.max_length:
                 # get the GC contents
                 region = sequence[ms[1]-1000:ms[2]+1000]
                 GC = region.count("G") + region.count("C")
