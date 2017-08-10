@@ -29,6 +29,7 @@ class MicroSatelliteProfiler:
     FASTA_DIRECTORY_ERROR_MESSAGE = (
         "Fasta directory correspoding to the reference genome does not exist."
     )
+    FASTA_FILE_ERROR_MESSAGE = "Fasta file: {} does not exist."
     NORMAL = "normal"
     NORMAL_BAM_ERROR_MESSAGE = "Normal bam file does not exist."
     NUMBER_OF_PROCESSORS_ERROR_MESSAGE = (
@@ -330,8 +331,19 @@ class MicroSatelliteProfiler:
         )
 
     def _set_fasta_dict(self):
-        for index in self.chromosomes:
-            self.fasta_dict[index] = "{}chr{}.fa".format(self.fasta_directory, index)
+        for chromosome in self.chromosomes:
+            fasta_path = os.path.join(
+                self.fasta_directory,
+                "chr{}.fa".format(chromosome)
+            )
+
+            assert os.path.exists(fasta_path), \
+                self.FASTA_FILE_ERROR_MESSAGE.format(fasta_path)
+
+            self.fasta_dict[chromosome] = "{}chr{}.fa".format(
+                self.fasta_directory,
+                chromosome
+            )
 
     def _validate_arguments(self):
         """

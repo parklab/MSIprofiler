@@ -503,6 +503,55 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertEqual(conclude_mock.call_count, 1)
         self.assertEqual(run_in_pool_mock.call_count, 4)
 
+    def test_specifying_chroms_with_no_fasta_file_raises_assertion_error(self):
+        self.output_prefix = "test_multicore_multi_chromosome"
+        self.mode = MicroSatelliteProfiler.UNPHASED
+        self.output_file = "{}_{}.txt".format(
+            self.OUTPUT_PREFIX_MULTICORE,
+            self.mode
+        )
+
+        self.TEST_ARGS = [
+            "msi_profiler.py",
+            "--tumor_bam",
+            "{}/test_tumor21_22.bam".format(self.TUMOR_BAM_PATH),
+            "--normal_bam",
+            "{}/test_normal21_22.bam".format(self.NORMAL_BAM_PATH),
+            "--bed",
+            "{}/germline_calls_22_sel1k.bed".format(self.BEDFILE_PATH),
+            "--chromosomes",
+            "2",
+            "4",
+            "--fasta",
+            "{}/chrs_fa/".format(self.FASTA_PATH),
+            "--reference_set",
+            "{}".format(self.REF_SET_PATH),
+            "--min_coverage",
+            "5",
+            "--min_MS_length",
+            "6",
+            "--flank_size",
+            "5",
+            "--rus",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+        ]
+        with self.assertRaises(AssertionError) as context:
+            self.run_msiprofiler(
+                self.MULTI_PROC,
+                output_prefix=self.OUTPUT_PREFIX_MULTICORE
+            )
+        self.assertEqual(
+            context.exception.message,
+            MicroSatelliteProfiler.FASTA_FILE_ERROR_MESSAGE.format(
+                "test-data/chrs_fa/chr2.fa"
+            )
+        )
+
     def test_unphased_multicore_multiple_chromosomes(self):
         self.output_prefix = "test_multicore_multi_chromosome"
         self.mode = MicroSatelliteProfiler.UNPHASED
