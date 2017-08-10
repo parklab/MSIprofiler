@@ -149,7 +149,7 @@ class MicroSatelliteProfiler:
         if self.number_of_processors > 1:
             all_normal = {}
             all_tumor = {}
-            for i in range(0, self.number_of_processors):
+            for i in range(0, self.number_of_processors*len(self.chromosomes)):
                 if self.is_phased:
                     all_normal.update(self.read_lengths_normal[i])
                     all_tumor.update(self.read_lengths_tumor[i])
@@ -157,16 +157,25 @@ class MicroSatelliteProfiler:
                     all_normal.update(self.read_lengths_normal_unphased[i])
                     all_tumor.update(self.read_lengths_tumor_unphased[i])
         else:
+            all_normal = {}
+            all_tumor = {}
             if self.is_phased:
-                all_normal = self.read_lengths_normal[0]
-                all_tumor = self.read_lengths_tumor[0]
+                for i in range(0,len(self.chromosomes)):
+                    all_normal.update(self.read_lengths_normal[i])
+                    all_tumor.update(self.read_lengths_tumor[i])
+                #all_normal = self.read_lengths_normal[0]
+                #all_tumor = self.read_lengths_tumor[0]
             else:
-                all_normal = self.read_lengths_normal_unphased[0]
-                all_tumor = self.read_lengths_tumor_unphased[0]
+                for i in range(0,len(self.chromosomes)):
+                    all_normal.update(self.read_lengths_normal_unphased[i])
+                    all_tumor.update(self.read_lengths_tumor_unphased[i])
+                #all_normal = self.read_lengths_normal_unphased[0:len(self.chromosomes)]
+                #all_tumor = self.read_lengths_tumor_unphased[0:len(self.chromosomes)]
 
         keys_normal = set(all_normal)
         keys_tumor = set(all_tumor)
-        common_keys = keys_tumor.intersection(keys_normal)
+        #common_keys = keys_tumor.intersection(keys_normal)
+        common_keys = sorted(keys_tumor.intersection(keys_normal))
 
         with open('{}_{}.txt'.format(self.output_prefix, self.mode), 'w') as f:
             if self.is_phased:
@@ -249,13 +258,13 @@ class MicroSatelliteProfiler:
             )
 
         if self.is_unphased:
-            for chr in self.chromosomes:
-
+            for chromo in self.chromosomes:
+                print "Processing chromosome: ",chromo
                 # Unphased Normal run
                 self._run_in_pool(
                     utils.unphased,
                     self.normal_bam,
-                    self.reference_set_dict[chr],
+                    self.reference_set_dict[chromo],
                     self._log_unphased_normal_result,
                     self.NORMAL
                 )
@@ -263,7 +272,7 @@ class MicroSatelliteProfiler:
                 self._run_in_pool(
                     utils.unphased,
                     self.tumor_bam,
-                    self.reference_set_dict[chr],
+                    self.reference_set_dict[chromo],
                     self._log_unphased_tumor_result,
                     self.TUMOR
                 )
