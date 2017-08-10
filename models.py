@@ -326,8 +326,9 @@ class MicroSatelliteProfiler:
             pool.close()
             pool.join()
 
-        print "{}: tumor/case bam file processed correctly..\n".format(
-            self.mode.upper()
+        print "{}: {} bam file processed correctly..\n".format(
+            self.mode.upper(),
+            tumor_type
         )
 
     def _set_fasta_dict(self):
