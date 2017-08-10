@@ -3,7 +3,7 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from utils import find_repeats
+from utils import find_repeats_reference
 
 
 def initialize_parser():
@@ -57,7 +57,7 @@ def main():
     parser = initialize_parser()
     args = parser.parse_args()
 
-    fi = "../chrs_fa/chr" + str(args.chr) + ".fa"
+    fi = "./chrs_fa/chr" + str(args.chr) + ".fa"
 
     assert os.path.exists(fi), "File: {} doesn't exist.".format(fi)
 
@@ -67,22 +67,22 @@ def main():
         sequence = ''.join(
             [line.strip("\n").upper() for line in myfile.readlines()[1:]]
         )
-    chromosome = int(args.chr)
+    chromosome = args.chr
 
-    o = find_repeats(sequence, 0, [chromosome], min_score=args.min_score)
+    o = find_repeats_reference(sequence, 0, chromosome, min_score=args.min_score)
 
     with open("reference_set_"+str(chromosome)+".txt", 'w') as f:
         for ms in o:
-            repeats_flanking_left = find_repeats(
+            repeats_flanking_left = find_repeats_reference(
                 sequence[ms[1]-10:ms[1]],
                 0,
-                [chromosome],
+                chromosome,
                 min_score=args.min_score
             )
-            repeats_flanking_right = find_repeats(
+            repeats_flanking_right = find_repeats_reference(
                 sequence[ms[2]:ms[2]+10],
                 0,
-                [chromosome],
+                chromosome,
                 min_score=args.min_score
             )
             if len(repeats_flanking_left) == 0 and \
