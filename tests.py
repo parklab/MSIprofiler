@@ -22,10 +22,11 @@ class MSIProfilerTests(unittest.TestCase):
     FASTA_PATH = TEST_DIR
     GOOD_PHASED = "{}/good_phased.txt".format(TEST_DIR)
     GOOD_UNPHASED = "{}/good_unphased.txt".format(TEST_DIR)
+    GOOD_UNPHASED_2_CHROMS = "{}/good_2chrs_unphased.txt".format(TEST_DIR)
     GOOD_PHASED_MULTICORE = "{}/good_phased_multi.txt".format(TEST_DIR)
     GOOD_UNPHASED_MULTICORE = "{}/good_unphased_multi.txt".format(TEST_DIR)
-    GOOD_UNPHASED_MULTICORE_2_CHROMS = "{}/good_2chrs_unphased.txt".format(
-        TEST_DIR
+    GOOD_UNPHASED_MULTICORE_2_CHROMS = (
+        "{}/good_2chrs_unphased_multi.txt".format(TEST_DIR)
     )
 
     OUTPUT_PREFIX = "{}_test".format(str(uuid.uuid4()))
@@ -524,7 +525,6 @@ class MSIProfilerTests(unittest.TestCase):
             "--bed",
             "{}/germline_calls_22_sel1k.bed".format(self.BEDFILE_PATH),
             "--chromosomes",
-            "2",
             "4",
             "--fasta",
             "{}/chrs_fa/".format(self.FASTA_PATH),
@@ -552,9 +552,56 @@ class MSIProfilerTests(unittest.TestCase):
         self.assertEqual(
             context.exception.message,
             MicroSatelliteProfiler.FASTA_FILE_ERROR_MESSAGE.format(
-                "test-data/chrs_fa/chr2.fa"
+                "test-data/chrs_fa/chr4.fa"
             )
         )
+
+    def test_unphased_multiple_chromosomes(self):
+        self.output_prefix = "test_multi_chromosome"
+        self.mode = MicroSatelliteProfiler.UNPHASED
+        self.output_file = "{}_{}.txt".format(
+            self.OUTPUT_PREFIX,
+            self.mode
+        )
+
+        self.TEST_ARGS = [
+            "msi_profiler.py",
+            "--tumor_bam",
+            "{}/test_tumor21_22.bam".format(self.TUMOR_BAM_PATH),
+            "--normal_bam",
+            "{}/test_normal21_22.bam".format(self.NORMAL_BAM_PATH),
+            "--bed",
+            "{}/germline_calls_22_sel1k.bed".format(self.BEDFILE_PATH),
+            "--chromosomes",
+            "21",
+            "22",
+            "--fasta",
+            "{}/chrs_fa/".format(self.FASTA_PATH),
+            "--reference_set",
+            "{}".format(self.REF_SET_PATH),
+            "--min_coverage",
+            "5",
+            "--min_MS_length",
+            "6",
+            "--flank_size",
+            "5",
+            "--rus",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+        ]
+
+        self.run_msiprofiler(
+            self.SINGLE_PROC,
+            output_prefix=self.OUTPUT_PREFIX
+        )
+
+        with open(self.output_file) as test_out, \
+                open(self.GOOD_UNPHASED_2_CHROMS) as known_good:
+            self.assertEqual(known_good.read(), test_out.read())
 
     def test_unphased_multicore_multiple_chromosomes(self):
         self.output_prefix = "test_multicore_multi_chromosome"
@@ -617,7 +664,7 @@ class GetReferenceSetTestCase(unittest.TestCase):
         ]
 
     @mock.patch("scripts.get_reference_set_from_fasta.main")
-    def test_proper_methods_are_called(self, main_mock):
+    def test_proper_method_is_called(self, main_mock):
         sys.argv = []
         sys.argv.extend(self.TEST_ARGS)
         scripts.get_reference_set_from_fasta.main()
