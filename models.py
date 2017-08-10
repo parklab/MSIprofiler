@@ -29,6 +29,7 @@ class MicroSatelliteProfiler:
     FASTA_DIRECTORY_ERROR_MESSAGE = (
         "Fasta directory correspoding to the reference genome does not exist."
     )
+    FASTA_FILE_ERROR_MESSAGE = "Fasta file: {} does not exist."
     NORMAL = "normal"
     NORMAL_BAM_ERROR_MESSAGE = "Normal bam file does not exist."
     NUMBER_OF_PROCESSORS_ERROR_MESSAGE = (
@@ -160,21 +161,16 @@ class MicroSatelliteProfiler:
             all_normal = {}
             all_tumor = {}
             if self.is_phased:
-                for i in range(0,len(self.chromosomes)):
+                for i in range(0, len(self.chromosomes)):
                     all_normal.update(self.read_lengths_normal[i])
                     all_tumor.update(self.read_lengths_tumor[i])
-                #all_normal = self.read_lengths_normal[0]
-                #all_tumor = self.read_lengths_tumor[0]
             else:
-                for i in range(0,len(self.chromosomes)):
+                for i in range(0, len(self.chromosomes)):
                     all_normal.update(self.read_lengths_normal_unphased[i])
                     all_tumor.update(self.read_lengths_tumor_unphased[i])
-                #all_normal = self.read_lengths_normal_unphased[0:len(self.chromosomes)]
-                #all_tumor = self.read_lengths_tumor_unphased[0:len(self.chromosomes)]
 
         keys_normal = set(all_normal)
         keys_tumor = set(all_tumor)
-        #common_keys = keys_tumor.intersection(keys_normal)
         common_keys = sorted(keys_tumor.intersection(keys_normal))
 
         with open('{}_{}.txt'.format(self.output_prefix, self.mode), 'w') as f:
@@ -202,7 +198,6 @@ class MicroSatelliteProfiler:
             "Calculation of the {} microsatellites finished successfully."
             .format(self.mode)
         )
-        print "All calculations finished successfully!\n"
 
     def _log_normal_result(self, result):
         self.read_lengths_normal.append(result)
@@ -259,7 +254,7 @@ class MicroSatelliteProfiler:
 
         if self.is_unphased:
             for chromo in self.chromosomes:
-                print "Processing chromosome: ",chromo
+                print "Processing chromosome: ", chromo
                 # Unphased Normal run
                 self._run_in_pool(
                     utils.unphased,
@@ -276,7 +271,6 @@ class MicroSatelliteProfiler:
                     self._log_unphased_tumor_result,
                     self.TUMOR
                 )
-
         self._conclude_run()
 
     def _run_in_pool(self,
@@ -332,13 +326,25 @@ class MicroSatelliteProfiler:
             pool.close()
             pool.join()
 
-        print "{}: tumor/case bam file processed correctly..\n".format(
-            self.PHASED.upper()
+        print "{}: {} bam file processed correctly..\n".format(
+            self.mode.upper(),
+            tumor_type
         )
 
     def _set_fasta_dict(self):
-        for index in self.chromosomes:
-            self.fasta_dict[index] = "{}chr{}.fa".format(self.fasta_directory, index)
+        for chromosome in self.chromosomes:
+            fasta_path = os.path.join(
+                self.fasta_directory,
+                "chr{}.fa".format(chromosome)
+            )
+
+            assert os.path.exists(fasta_path), \
+                self.FASTA_FILE_ERROR_MESSAGE.format(fasta_path)
+
+            self.fasta_dict[chromosome] = "{}chr{}.fa".format(
+                self.fasta_directory,
+                chromosome
+            )
 
     def _validate_arguments(self):
         """
