@@ -1,6 +1,6 @@
 import bisect
 import csv
-
+import string
 import pysam
 import numpy as np
 
@@ -190,7 +190,8 @@ def phased(msi_obj, sites, bam_path):
         for site in sites:
             start = int(site[1])
             end = int(site[2])
-            chr = str(site[0])
+            chr = site[0]
+            #chr = str(site[0])
             bases = [site[3], site[4]]
             reads = [
                 read for read in bamfile.fetch(
@@ -236,6 +237,7 @@ def phased(msi_obj, sites, bam_path):
                             # use the reference set here to get the
                             # position on the right
                             ini = start_read + rs  #
+                            chr=string.strip(chr,"chr")
                             idx2 = binary_search(
                                 msi_obj.reference_set_ini_end_dict[chr],
                                 str(ini + 1)
@@ -250,10 +252,10 @@ def phased(msi_obj, sites, bam_path):
                                     filename=msi_obj.fasta_dict[chr]
                             ) as fasta_file:
                                 flank_right_ref = fasta_file.fetch(
-                                    "chr" + str(site[0]), ini + diff_ref,
+                                    "chr" + str(site[0]), ini + diff_ref, #XX
                                     ini + diff_ref + msi_obj.flank_size).upper()
                                 flank_left_ref = fasta_file.fetch(
-                                    "chr" + str(site[0]), ini -
+                                    "chr" + str(site[0]), ini - #XX
                                     msi_obj.flank_size,
                                     ini).upper()
                             posfl = (start_read + rs - msi_obj.flank_size)
@@ -299,9 +301,9 @@ def unphased(msi_obj, sites, bam_path):
         for site in sites:
             start = int(site[1])
             #end = int(site[2]) + 1
-            chr = site[0];
+            chr = site[0]
             ru = int(site[4])
-            reads = [read for read in bamfile.fetch(str(chr), start, start + 1,
+            reads = [read for read in bamfile.fetch(chr, start, start + 1,
                                                     multiple_iterators=True)]
             reads = [read for read in reads if
                      read.is_proper_pair and read.is_duplicate == False and
@@ -328,16 +330,17 @@ def unphased(msi_obj, sites, bam_path):
                             if start != start_read + rs + 1:  # do not consider if there are ins/del upstream of the repeat
                                 continue
                             difference = re - rs + 1
+                            chr=string.strip(chr,"chr")
                             # get flinking sequence from reference
                             fasta_file = pysam.FastaFile(
                                 filename=msi_obj.fasta_dict[chr]
                             )
                             flank_left_ref = fasta_file.fetch(
-                                "chr" + chr,
+                                "chr" + chr, #string.strip(chr,"chr"), #X
                                 start_read + rs -
                                 msi_obj.flank_size,
                                 start_read + rs).upper()
-                            flank_right_ref = fasta_file.fetch("chr" + chr,
+                            flank_right_ref = fasta_file.fetch("chr" + chr, #string.strip(chr,"chr"), #X
                                                                int(site[
                                                                        2]) - 1,
                                                                int(site[

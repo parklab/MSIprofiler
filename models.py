@@ -7,6 +7,7 @@ from os import path
 import multiprocessing as mp
 import numpy as np
 from scipy import stats
+import string
 
 import utils
 
@@ -22,7 +23,7 @@ class MicroSatelliteProfiler:
     VALID_REPEAT_UNITS = [1, 2, 3, 4, 5, 6]
 
     CHROMOSOMES = [str(i) for i in range(1, 23)]
-    CHROMOSOMES.extend(["X", "Y"])
+    CHROMOSOMES.extend(["X", "Y","chr1","chr2","chr3","chr4","chr5","chr6","chr7","chr8","chr9","chr10","chr11","chr12","chr13","chr14","chr15","chr16","chr17","chr18","chr19","chr20","chr21","chr22","chrX","chrY"])
     CHROMOSOMES_ERROR_MESSAGE = (
         "Valid chromosomes are: {}".format(CHROMOSOMES)
     )
@@ -72,6 +73,7 @@ class MicroSatelliteProfiler:
         self.reference_set_base_dir = arguments.reference_set
         self.repeat_units = set(arguments.rus)
         self.tolerated_mismatches = arguments.tolerated_mismatches
+        #self.notation = arguments.notation
         self.tumor_bam = arguments.tumor_bam
         self.reference_sets = None
         self.sites = None
@@ -216,7 +218,7 @@ class MicroSatelliteProfiler:
             refsetgen = utils.loadcsv(
                 os.path.join(
                     self.reference_set_base_dir,
-                    "reference_set_{}_sorted.txt".format(chromosome)
+                    "reference_set_{}_sorted.txt".format(string.strip(chromosome,"chr"))
                 ),
                 self.min_microsatellite_length,
                 self.max_microsatellite_length,
@@ -333,6 +335,7 @@ class MicroSatelliteProfiler:
 
     def _set_fasta_dict(self):
         for chromosome in self.chromosomes:
+            chromosome=string.strip(chromosome,"chr")
             fasta_path = os.path.join(
                 self.fasta_directory,
                 "chr{}.fa".format(chromosome)
@@ -344,6 +347,7 @@ class MicroSatelliteProfiler:
             self.fasta_dict[chromosome] = "{}chr{}.fa".format(
                 self.fasta_directory,
                 chromosome
+                #string.strip(chromosome,"chr")
             )
 
     def _validate_arguments(self):

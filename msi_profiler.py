@@ -149,6 +149,19 @@ def initialize_parser():
         default=0,
         type=int
     )
+   # parser.add_argument(
+   #     '--notation',
+   #     help=(
+   # 		'Ensemble (1,2, .. Y) or UCSC (chr1, chr2, .. chrY)'
+   #     ),
+   #     required=False,
+   #     default="Ensemble",
+   #     type=str,
+   #     choices=[
+   # 		'Ensemble',
+   # 		'UCSC'
+   #     ]
+   # )
     return parser
 
 
