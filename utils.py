@@ -92,6 +92,10 @@ def find_repeats(seq, flank_size, repeat_units, min_score=MIN_SCORE):
 
 def find_repeats_target(seq, flank_size, repeat_units):
 
+    MATCH_SCORE = 1  # score for a match
+    MISMATCH_SCORE = -6  # score penalty for a mismatch
+    FAIL_SCORE = -1  # score value to stop searching
+    MIN_SCORE = 4  # minimum score value to pass. The minimum length of MS repeats
     bases = len(seq)  # number of bases in the input sequence
 
     # save output as a list of lists
@@ -390,6 +394,10 @@ fail_score = -1 # score value to stop search at a given current_pos
 
 
 def find_repeats_reference(seq,flank_size,chromo,min_score):
+    MATCH_SCORE = 1  # score for a match
+    MISMATCH_SCORE = -6  # score penalty for a mismatch
+    FAIL_SCORE = -1  # score value to stop searching
+    MIN_SCORE = 4  # minimum score value to pass. The minimum length of MS repeats
     cigar = seq #XX change
     bases=len(seq) # number of bases in the input sequence
 
