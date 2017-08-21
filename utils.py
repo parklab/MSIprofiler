@@ -7,7 +7,7 @@ import numpy as np
 MATCH_SCORE = 1  # score for a match
 MISMATCH_SCORE = -6  # score penalty for a mismatch
 FAIL_SCORE = -1  # score value to stop searching
-MIN_SCORE = 5  # minimum score value to pass. The minimum length of MS repeats
+MIN_SCORE = 4  # minimum score value to pass. The minimum length of MS repeats
 
 
 # https://stackoverflow.com/questions/212358/binary-search-bisection-in-python
@@ -91,11 +91,6 @@ def find_repeats(seq, flank_size, repeat_units, min_score=MIN_SCORE):
 
 
 def find_repeats_target(seq, flank_size, repeat_units):
-    # rus = {1,2,3,4} # repeat units considered ## take this from the CONF FILE
-    MATCH_SCORE = 1  # score for a match
-    MISMATCH_SCORE = -6  # score penalty for a mismatch
-    FAIL_SCORE = -1  # score value to stop search at a given current_pos
-    MIN_SCORE = 5  ##minimum score value to pass
 
     bases = len(seq)  # number of bases in the input sequence
 
@@ -183,7 +178,6 @@ def loadcsv(filename, criterion1, criterion2, repeat_units):
                             int(row[4]) in repeat_units:
                 yield row
 
-
 def phased(msi_obj, sites, bam_path):
     with pysam.AlignmentFile(bam_path, "rb") as bamfile:
         dict_out = {}
@@ -237,7 +231,8 @@ def phased(msi_obj, sites, bam_path):
                             # use the reference set here to get the
                             # position on the right
                             ini = start_read + rs  #
-                            chr=string.strip(chr,"chr")
+                            #chr=string.strip(chr,"chr")
+                            chr=chr.strip("chr")
                             idx2 = binary_search(
                                 msi_obj.reference_set_ini_end_dict[chr],
                                 str(ini + 1)
@@ -293,7 +288,7 @@ def phased(msi_obj, sites, bam_path):
 
     return dict_out
 
-
+#@profile
 def unphased(msi_obj, sites, bam_path):
     with pysam.AlignmentFile(bam_path, "rb") as bamfile:
         dict_out = {}
@@ -330,7 +325,8 @@ def unphased(msi_obj, sites, bam_path):
                             if start != start_read + rs + 1:  # do not consider if there are ins/del upstream of the repeat
                                 continue
                             difference = re - rs + 1
-                            chr=string.strip(chr,"chr")
+                            #chr=string.strip(chr,"chr")
+                            chr=chr.strip("chr")
                             # get flinking sequence from reference
                             fasta_file = pysam.FastaFile(
                                 filename=msi_obj.fasta_dict[chr]
