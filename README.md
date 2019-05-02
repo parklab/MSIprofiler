@@ -216,5 +216,8 @@ If you have any questions or suggestions please contact us:
 - Isidro Cortes Ciriano: isidrolauscher at gmail.com  or isidro\_cortesciriano at hms.harvard.edu
 - Peter J Park: peter\_park at hms.harvard.edu
 
+# Acknowledgements
+We would like to acknowledge the support of the Chan Zuckerberg Initiative for their Collaborative Computational Tools for the Human Cell Atlas program.
+
 
 
