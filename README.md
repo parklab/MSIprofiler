@@ -19,13 +19,14 @@ and
 Isidro Cortes-Ciriano et al. Nat. Commun. 2017 (https://www.nature.com/articles/ncomms15180)
 
 Requests for use of the Software for or on behalf of for-profit entities or for any commercial purposes, please contact:
-Office of Technology Development
-Harvard University
-Smith Campus Center, Suite 727E
-1350 Massachusetts Avenue
-Cambridge, MA 02138 USA
-Telephone: (617) 495-3067
-E-mail: otd@harvard.edu
+
+Office of Technology Development  
+Harvard University  
+Smith Campus Center, Suite 727E  
+1350 Massachusetts Avenue  
+Cambridge, MA 02138 USA  
+Telephone: (617) 495-3067  
+E-mail: otd@harvard.edu  
 
 # Pre-reqs
 
