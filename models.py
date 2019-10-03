@@ -386,7 +386,7 @@ class MicroSatelliteProfiler:
                 if len(nor) >= self.min_coverage and \
                                 len(canc) >= self.min_coverage:
                     pval = stats.ks_2samp(nor, canc)[1]
-                    mo = stats.mode(nor)
+                    mo = stats.mode(nor).mode ## now scipy also returns the count for the mode!!
                     percentage = (nor == mo).sum() / len(nor)
                     confidence = "high" if percentage >= .7 else "low"
                     outf.write(name + "\t" + ",".join(
