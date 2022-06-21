@@ -2,6 +2,6 @@ argparse==1.1
 codecov==2.0.9
 mock==2.0.0
 multiprocessing==2.6.2.1
-numpy==1.10.1
+numpy==1.22.0
 pysam==0.10.0
 scipy==0.17.0
